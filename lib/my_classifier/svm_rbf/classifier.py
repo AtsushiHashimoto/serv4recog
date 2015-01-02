@@ -66,12 +66,14 @@ def train(db,data):
 	clf.fit(x,y)
 	
 	record = my_classifier.mongointerface.create_clf_query('svm_rbf',feature_type,group)
-	event = copy.deepcopy(record)
+	event = {'_id':record['_id'] + "::train"}
+
 	record['clf'] = pickle.dumps(clf)
 	record['class_name2id'] = class_map
 	class_map_inv = {str(v):k for k, v in class_map.items()}
 	record['class_id2name'] = class_map_inv
 	try:
+		record = my_classifier.mongointerface.remove_mongo_operator(record)
 		db["classifiers"].save(record)
 	except:
 		return my_classifier.error_json(sys.exc_info()[1])
@@ -110,7 +112,7 @@ def predict(db, sample):
 
 	sample.likelihood[ll_id] = likelihood_dict
 	result = my_classifier.success_json()
-	result['event'] = query
+	result['event'] = {'clf_id':query['_id']}
 	result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
 
 	my_classifier.mongointerface.add(db,sample)

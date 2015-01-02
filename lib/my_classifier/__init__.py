@@ -19,20 +19,7 @@ def is_success(json):
 	return False
 
 
-def cleaning_query(data,src_keys,tar_keys=None, required_keys=[]):
-	if tar_keys==None:
-		tar_keys = src_keys
-	query = {}
-	for skey,tkey in zip(src_keys,tar_keys):
-		if data.has_key(skey):
-			if isinstance(data[skey],list):
-				query[tkey] = {'$all':data[skey]}
-			else:
-				query[tkey] = data[skey]
-	
-		elif skey in required_keys:
-			return None
-	return query
+
 
 ensure_list = mongointerface.ensure_list
 def cleaning_sample_query(json_data):
@@ -41,24 +28,6 @@ def cleaning_sample_query(json_data):
 	if json_data.has_key('group'):
 		json_data['group'] = ensure_list(json_data['group'])
 	return cleaning_query(json_data,src_keys,tar_keys)
-
-
-#############################################
-# classifier query
-#############################################
-
-def cleaning_clf_query(json_data,algorithm):
-	src_keys = ['feature_type','group']
-	tar_keys = ['feature_type','group']
-
-	if json_data.has_key('group'):
-		json_data['group'] = ensure_list(json_data['group'])
-
-	query = cleaning_query(json_data,src_keys,tar_keys)
-	if None == query:
-		return None
-	query['algorithm'] = algorithm
-	return query
 
 
 
