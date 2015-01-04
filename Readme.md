@@ -55,8 +55,12 @@ HTTP POST:
 - json_data=$SAMPLE_IN_JSON_FORMAT
 
 ml      : fixed path name.
+
 my_db   : name of separated database for your application.
-svm_rbf : name of designated recognizer. (currently, only svm_rbf is available.)
+
+svm_rbf : ignored for _Add_ and some other operations. For train/predict/evaluate operations, this parameter designate type of recognizer. (currently, only svm_rbf is available.)
+
+- CAUTION: In your custome applications, '{' and ':' should be url-encoded!! Please check specification of the HTTP library used in your application.
 
 ### ${SAMPLE-IN-JSON-FORMAT}
 sample has following parameters.
@@ -88,7 +92,7 @@ classifier has following parameters.
 ## Predict
 - http://localhost:8080/ml/my_db/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
 
-## Evaluation
+## Evaluate
 - http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Samples
@@ -98,4 +102,5 @@ classifier has following parameters.
 - http://localhost:8080/ml/my_db/svm_rbf/evaluate?clear_classifier=$CLASSIFIER-IN-JSON-FORMAT
 
 
-
+# Contribution
+We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!
