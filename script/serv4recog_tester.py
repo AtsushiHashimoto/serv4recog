@@ -104,7 +104,7 @@ if __name__ == '__main__':
 	operation = 'clear_classifier'
 	print operation
 	
-	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group, 'algorithm':algorithm})}
+	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group})}
 	try:
 		response = s.post(address + operation, params=params)
 	except:
@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
 	# order: 学習させる際のオプション 
 	# order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)
-	order = {'feature_type':feature_type, 'multi':multi, 'force':force, 'group':group}
+	order = {'feature_type':feature_type, 'force':force, 'group':group}
 	response = s.post(address + operation, params = {'json_data':json.dumps(order)})
 	result = json.loads(response.text)
 	print result
