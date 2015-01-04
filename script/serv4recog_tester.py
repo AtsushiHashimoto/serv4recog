@@ -65,11 +65,12 @@ if __name__ == '__main__':
 
 	# 生成した特徴量を認識用サーバに投げて登録する
 	import requests
-	import urllib
 	# testする際の経路
 	test_by_post = False # True ならpost形式で投げる
 
-	s	= requests.session()
+
+	a = requests.adapters.HTTPAdapter()
+	conn = a.get_connection("http://localhost:8080")
 	
 	database = 'test'
 	algorithm = 'svm_rbf'
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 	group = ['target_group']
 	# group = []
 
-	address = "http://localhost:8080/ml/%s/%s/" % (database,algorithm)
+	url_path = "/ml/%s/%s/" % (database,algorithm)
 
 	feature_type = 'test_dim%03d' % feature_dim
 
@@ -88,13 +89,13 @@ if __name__ == '__main__':
 
 	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group})}
 	try:
-		response = s.post(address + operation, params=params)
+		response = conn.request('POST',url_path + operation, params)
 	except:
 		for message in sys.exc_info():
 			print message
 		exit()
 
-	result = json.loads(response.text)
+	result = json.loads(response.data)
 	print result
 
 	if result['status'] != 'success':
@@ -106,37 +107,35 @@ if __name__ == '__main__':
 	
 	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group})}
 	try:
-		response = s.post(address + operation, params=params)
+		response = conn.request('POST',url_path + operation, params)
 	except:
 		for message in sys.exc_info():
 			print message
 		exit()
 
-	result = json.loads(response.text)
+	result = json.loads(response.data)
 	print result
 	
 	if result['status'] != 'success':
 		print "ERROR: failed to clear classifier"
 		exit()
 
-	exit()
 
 	# 1つずつサンプルを追加
 	operation = 'add'
 	print operation
-	group += ["hoge"]
 
 	for i, (_y, _x) in enumerate(zip(y,x)):
 		sample = {'id':i, 'class': _y, 'feature': _x, 'feature_type': feature_type, 'group': group}
 		print sample
 		try:
-			response = s.post(address + operation, params = {'json_data': json.dumps(sample)})
+			response = conn.request('POST',url_path + operation, {'json_data': json.dumps(sample)})
 		except:
 			for message in sys.exc_info():
 				print message
 			exit()
-		print response.text
-		result = json.loads(response.text)
+		print response.data
+		result = json.loads(response.data)
 		print result
 
 
@@ -150,8 +149,8 @@ if __name__ == '__main__':
 	# order: 学習させる際のオプション 
 	# order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)
 	order = {'feature_type':feature_type, 'force':force, 'group':group}
-	response = s.post(address + operation, params = {'json_data':json.dumps(order)})
-	result = json.loads(response.text)
+	response = conn.request('POST',url_path + operation, {'json_data':json.dumps(order)})
+	result = json.loads(response.data)
 	print result
 
 
@@ -172,13 +171,13 @@ if __name__ == '__main__':
 		sample = {'id':offset+i, 'class': class_name, 'feature': feature, 'feature_type': feature_type, 'group': group}
 		
 		try:
-			response = s.post(address + operation, params = {'json_data':json.dumps(sample)})
+			response = conn.request('POST',url_path + operation, {'json_data':json.dumps(sample)})
 		except:
 			for message in sys.exc_info():
 				print message
 			exit()
 
-		result = json.loads(response.text)
+		result = json.loads(response.data)
 		print result
 		y.append('class_%02d'%class_id)
 		#likelihood.append(result['likelihood'])
@@ -186,8 +185,8 @@ if __name__ == '__main__':
 	# 識別結果の精度を問い合わせる
 	operation = 'evaluate'
 	order = {'feature_type':feature_type,'group':group}
-	response = s.post(address + operation, params = {'json_data':json.dumps(order)})
-	result = json.loads(response.text)
+	response = conn.request('POST', url_path + operation, {'json_data':json.dumps(order)})
+	result = json.loads(response.data)
 	print "class_list: %s"% " ".join(result['class_list'])
 	for key,val in result.items():
 		if key=='class_list':
