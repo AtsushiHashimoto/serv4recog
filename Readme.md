@@ -74,10 +74,10 @@ sample has following parameters.
 - class: teacher signal for this sample. (optional, but required as training sample.)
  - _ex) {"class": "class001"}_
 - group: characterize samples to grouping. (optional)
- - _ex) {"group":["pca","recog-target-group01"]}
+ - _ex) {"group":["pca","target-group"]}
  - ("pca" suppose to group all samples whose feature are filtered by PCA process.)
 - likelihood: recognition results (only in output)
- - _ex) {"svm_rbf::recog-target-group01":{"class001":0.9, "class002":0.1}}_
+ - _ex) {"svm_rbf::target-group":{"class001":0.9, "class002":0.1}}_
 
 ## Train
 - http://localhost:8080/ml/my_db/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
@@ -87,7 +87,7 @@ classifier has following parameters.
 - feature_type: target feature type of samples.
 - force: force to overwrite a trained classifier if exists. (currently, always true.)
 - group: target sample groups (optional).
- - _ex) {'feature_type':feature_type, 'multi':multi, 'force':force, 'group':group}
+ - _ex) {'feature_type':feature\_type, 'multi':multi, 'force':force, 'group':group}
 
 ## Predict
 - http://localhost:8080/ml/my_db/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
@@ -99,7 +99,16 @@ classifier has following parameters.
 - http://localhost:8080/ml/my_db/svm_rbf/clear_sample?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Classifier
-- http://localhost:8080/ml/my_db/svm_rbf/evaluate?clear_classifier=$CLASSIFIER-IN-JSON-FORMAT
+- http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+
+## Group
+- http://localhost:8080/ml/my_db/svm_rbf/group?json_data=${GROUP_MEMBERS}
+
+### ${GROUP_MEMBERS}
+- group_name: name of target group
+- feature_type: target feature type of samples.
+- class_list: a list of (new) classes that are grouped into _group\_name_ the group.
+- _ex) {"group\_name":"target-group","class_list":["class001","class002","class003"]}_
 
 
 # Contribution
