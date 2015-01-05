@@ -68,6 +68,10 @@ def route(db, json_data_s,operation,algorithm=None):
 	elif operation=='clear_samples':
 		return mongointerface.clear_samples(db,data)
 
+# group
+	elif operation=='group':
+		return mongointerface.group(db,data)
+
 # evaluate
 	elif operation=='evaluate':
 		return mongointerface.evaluate(db,data,algorithm)

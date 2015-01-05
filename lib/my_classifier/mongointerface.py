@@ -299,9 +299,40 @@ def predict(func):
 	return wrapper
 
 
+######################
+# group
+######################
+@access_history_log
+def group(db,data):
+	print "function: group"
+	group_name = data['group_name']
+	class_list = data['class_list']
+	feature_type = data['feature_type']
+	
+	collections = db[feature_type]
 
-###########
+	samples = collections.find({"cls":{"$in": class_list}})
+	print samples
+	counter = {cls:0 for cls in class_list} 
+	if samples.count() == 0:
+		return my_classifier.error_json("ERROR: no samples are hit.")
+	for s in samples:
+		groups = s['group']
+		if not group_name in groups:
+			groups.append(group_name)
+			_id = s['_id']
+			counter[s['cls']]+=1
+			collections.update({"_id":_id},{"$set":{'group':groups}})
+	result = my_classifier.success_json()
+	event_id = "group::%s::%s" % (group_name,"-".join(sorted(class_list)))
+	result['event'] = {'_id':event_id,'counter':counter}
+	return result
+	
+
+
+######################
 # evaluate
+######################
 @access_history_log
 def evaluate(db,data,algorithm):
 	print "function: evaluate"
