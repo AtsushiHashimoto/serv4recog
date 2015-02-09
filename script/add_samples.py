@@ -11,7 +11,7 @@ import argparse
 
 
 if __name__ == '__main__':
-	usage = "USAGE: # python %(prog)s tar_dir feature_name feature_extractor"
+	usage = "USAGE: # python %(prog)s tar_dir feature_name \"feature_extractor [options]\""
 	description = "Upload samples stored in directory."
 	parser = argparse.ArgumentParser(description=description,usage=usage)
 	
@@ -34,11 +34,14 @@ if __name__ == '__main__':
 
 
 	# 指定されたディレクトリ(tar_dir)以下を解析し，(必要であれば特徴抽出をし，)サーバに投げる
+	# 途中にgroups.dat(各行1グループ名)があれば，それを配下のディレクトリの全サンプルに追加する
   # ディレクトリ構成例)
 	# tar_dir
 	# ├── group01
+	# │   ├── groups.dat
 	# │   ├── group01_01
 	# │   │   └── class00X
+	# │   │       ├── groups.dat
 	# │   │       ├── sample00001.png
 	# │   │       └── featureA-sample00002.dat
 	# │   └── group01_02
@@ -88,8 +91,20 @@ if __name__ == '__main__':
 				#		print response.text
 		print response.data
 
+	def load_group_list_file(file):
+		groups = []
+		with open(file, 'r') as f:
+			for line in f:
+				groups.append(line.strip())
+
+	group_list_file = "groups.dat"
+
 	def main_process(conn,dir,groups):		
+		if os.path.exists(dir+"/"+group_list_file):			
+			groups + load_group_list_file(dir+"/"+group_list_file)
 		for file in glob.glob(dir + "/*"):
+			if file == group_list_file: # 読み込み済み
+				continue
 			if os.path.isfile(file):
 				send_sample(conn,file,groups)
 				continue
