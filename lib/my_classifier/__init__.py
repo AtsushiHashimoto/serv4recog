@@ -1,7 +1,14 @@
+#-*- coding:utf-8 -*-
 import svm_rbf
 from sample import Sample
 import mongointerface
 import json
+
+import functools
+
+import pickle
+import collections
+
 
 
 ################################################
@@ -95,6 +102,119 @@ def route(db, json_data_s,operation,algorithm=None):
 		else:
 			return error_json('Error: unknown operation %s.' % operation)
 
+
+
+#############################################
+# DECORATOR
+#############################################
+def train_deco(func):
+	@functools.wraps(func)
+	def wrapper(db,data):
+		# データを適当な形式にする
+		if not data.has_key('feature_type'):
+			return my_classifier.error_json("ERROR: feature_type must be designated")
+		feature_type = data['feature_type']
+
+		group = []
+		if data.has_key('group'):
+			group = ensure_list(data['group'])
+
+
+		# クラスへの分類
+		samples = mongointerface.get_training_samples(db, feature_type, False, group)
+		if 1 >= samples.count():
+		       	return error_json('Too few training samples for %s.'%feature_type)
+
+		x = [[]] * samples.count()
+		y = [0] * samples.count()
+		class_count = collections.defaultdict(int)
+
+		for i,s in enumerate(samples):
+		       	x[i] = s['ft']
+			y[i] = s['cls']
+			class_count[s['cls']] += 1
+
+	       	class_list = sorted(class_count.keys())
+
+
+		# クラスの「重み付け」
+		class_map = {}
+		class_weight = {}
+		for i,cls in enumerate(class_list):
+			class_map[cls] = i
+			class_weight[i] = float(len(class_list) * (samples.count() - class_count[cls])) / float(samples.count())
+
+		for i in range(len(y)):
+			y[i] = class_map[y[i]]
+
+
+		#アルゴリズムに依存する部分
+		clf=func(x,y,class_weight)
+
+		#結果を保存
+		record = mongointerface.create_clf_query('svm_rbf',feature_type,group)
+		event = {'_id':record['_id'] + "::train"}
+
+		record['clf'] = pickle.dumps(clf)
+		record['class_name2id'] = class_map
+		class_map_inv = {str(v):k for k, v in class_map.items()}
+		record['class_id2name'] = class_map_inv
+		try:
+			record = mongointerface.remove_mongo_operator(record)
+			db["classifiers"].save(record)
+		except:
+			return error_json(sys.exc_info()[1])
+		result = success_json()
+		result['event'] = event
+		return result
+	return wrapper
+
+
+def predict_deco(method):
+	def recieve_func(func):
+		@functools.wraps(func)
+		def wrapper(db,sample):
+			# サンプルのグループを取ってくるだけ
+			# Sample … (ft,_id,type,cls,group,likelihood,weight)
+			print "function: predict"
+			feature_type = sample.type
+			group = sample.group
+			print group
+
+			## method(svm_rbf)に依存する部分その1
+			query = mongointerface.create_clf_query(method,feature_type,group)
+
+			# 予測部
+			collection = db["classifiers"]
+			
+			try:
+				record = collection.find_one(query)
+			except:
+				return error_json(sys.exc_info()[1])
+			clf = pickle.loads(record['clf'])
+
+
+			## method(svm_rbf)に依存する部分その2
+			likelihood_list = func(clf,sample)
+
+			likelihood_dict = {}
+			for i,l in enumerate(likelihood_list):
+				key = record['class_id2name'][str(i)]
+				likelihood_dict[key] = l
+
+			## method(svm_rbf)に依存する部分その3
+			ll_id = mongointerface.create_clf_likelihood_marker(method,group)
+			
+			# 予測結果をデータベースへ追加
+			sample.likelihood[ll_id] = likelihood_dict
+			result = success_json()
+			result['event'] = {'clf_id':query['_id']}
+			result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
+
+			mongointerface.add(db,sample)
+			return result 
+		return wrapper
+	return recieve_func
 
 
 
