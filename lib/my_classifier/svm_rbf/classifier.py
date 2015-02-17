@@ -86,6 +86,7 @@ def train_deco(func):
 		return result
 	return wrapper
 
+
 #train_svm=my_classifier.mongointerface.access_history_log(train_deco(train_svm))
 @my_classifier.mongointerface.access_history_log
 @train_deco
@@ -97,57 +98,58 @@ def train(x,y,class_weight):
 
 ### predict
 ### デコレータを用いた版に修正
-def predict_deco(func):
-	@functools.wraps(func)
-	def wrapper(db,sample,method):
-		# サンプルのグループを取ってくるだけ
-		## Sample … (ft,_id,type,cls,group,likelihood,weight)
-		print "function: predict"
-		feature_type = sample.type
-		group = sample.group
-		print group
+def predict_deco(method):
+	def recieve_func(func):
+		@functools.wraps(func)
+		def wrapper(db,sample):
+			# サンプルのグループを取ってくるだけ
+			# Sample … (ft,_id,type,cls,group,likelihood,weight)
+			print "function: predict"
+			feature_type = sample.type
+			group = sample.group
+			print group
 
-		## method(svm_rbf)に依存する部分その1
-		query = my_classifier.mongointerface.create_clf_query(method,feature_type,group)
+			## method(svm_rbf)に依存する部分その1
+			query = my_classifier.mongointerface.create_clf_query(method,feature_type,group)
 
-		# 予測部
-		collection = db["classifiers"]
+			# 予測部
+			collection = db["classifiers"]
+			
+			try:
+				record = collection.find_one(query)
+			except:
+				return my_classifier.error_json(sys.exc_info()[1])
+			clf = pickle.loads(record['clf'])
 
-		try:
-			record = collection.find_one(query)
-		except:
-			return my_classifier.error_json(sys.exc_info()[1])
-		clf = pickle.loads(record['clf'])
 
+			## method(svm_rbf)に依存する部分その2
+			likelihood_list = func(clf,sample)
 
-		## method(svm_rbf)に依存する部分その2
-		#likelihood_list = clf.predict_proba(sample.ft).tolist()[0]
-		likelihood_list = func(clf)
+			likelihood_dict = {}
+			for i,l in enumerate(likelihood_list):
+				key = record['class_id2name'][str(i)]
+				likelihood_dict[key] = l
 
-		likelihood_dict = {}
-		for i,l in enumerate(likelihood_list):
-                        key = record['class_id2name'][str(i)]
-                        likelihood_dict[key] = l
+			## method(svm_rbf)に依存する部分その3
+			ll_id = my_classifier.mongointerface.create_clf_likelihood_marker(method,group)
+			
+			# 予測結果をデータベースへ追加
+			sample.likelihood[ll_id] = likelihood_dict
+			result = my_classifier.success_json()
+			result['event'] = {'clf_id':query['_id']}
+			result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
 
-		## method(svm_rbf)に依存する部分その3
-		ll_id = my_classifier.mongointerface.create_clf_likelihood_marker(method,group)
-
-		# 予測結果をデータベースへ追加
-		sample.likelihood[ll_id] = likelihood_dict
-		result = my_classifier.success_json()
-		result['event'] = {'clf_id':query['_id']}
-		result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
-
-		my_classifier.mongointerface.add(db,sample)
-		return result 
-	return wrapper
+			my_classifier.mongointerface.add(db,sample)
+			return result 
+		return wrapper
+	return recieve_func
 
 
 
 @my_classifier.mongointerface.access_history_log
 @my_classifier.mongointerface.sample_treater
-@predict_deco
-def predict(clf):
+@predict_deco('svm_rbf')
+def predict(clf,sample):
 	return clf.predict_proba(sample.ft).tolist()[0]
 
 
