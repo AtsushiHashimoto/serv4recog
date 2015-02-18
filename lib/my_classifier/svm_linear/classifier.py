@@ -16,9 +16,9 @@ def test():
 
 #### train
 @my_classifier.mongointerface.access_history_log
-@my_classifier.train_deco('svm_rbf')
+@my_classifier.train_deco('svm_linear')
 def train(x,y,class_weight):
-        clf = svm.SVC(kernel='rbf',probability=True,class_weight=class_weight)
+        clf = svm.SVC(kernel='linear',probability=True,class_weight=class_weight)
         clf.fit(x,y)
 	return clf
 
@@ -26,7 +26,7 @@ def train(x,y,class_weight):
 #### predict
 @my_classifier.mongointerface.access_history_log
 @my_classifier.mongointerface.sample_treater
-@my_classifier.predict_deco('svm_rbf')
+@my_classifier.predict_deco('svm_linear')
 def predict(clf,sample):
 	return clf.predict_proba(sample.ft).tolist()[0]
 

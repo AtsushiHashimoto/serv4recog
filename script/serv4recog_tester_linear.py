@@ -73,7 +73,8 @@ if __name__ == '__main__':
 	conn = a.get_connection("http://localhost:8080")
 	
 	database = 'test'
-	algorithm = 'svm_rbf'
+	# ここでalgorithm(ディレクトリ名)を指定する
+	algorithm = 'svm_linear'
 
 	# groupを指定するテスト 
 	group = ['target_group']
