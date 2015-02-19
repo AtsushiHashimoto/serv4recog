@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-from bottle import Bottle, request, run, error, get, post, template
+from bottle import Bottle, request, run, error, template
 from bson import json_util
 from pymongo import MongoClient
-from datetime import date
 import os
 import sys
-import logging
 import json
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)) + '/lib')
@@ -59,6 +57,7 @@ def get_add(database):
 		json_data_s = request.params.json_data
 	else:
 		return my_classifier.error_json("parameter 'json_data' must be set.")
+	db = mongo_client[database]
 	result = my_classifier.route(db,json_data_s,'add')
 	print "result" + result
 	return json.dumps(result,default=json_util.default)
