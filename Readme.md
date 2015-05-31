@@ -1,7 +1,7 @@
 # About this project
 Project Name: Server4recog
 Verion:	      0.1
-Git Repo.:    https://github.com/AtsushiHashimoto/server4recog
+Git Repo.:    https://github.com/AtsushiHashimoto/serv4recog
 
 # What is serv4recog?
 1. A web service which provides pattern recognition interface through http GET/POST requests.
@@ -13,7 +13,7 @@ Git Repo.:    https://github.com/AtsushiHashimoto/server4recog
 OSX 10.9
 
 # Download
-    % git clone https://github.com/AtsushiHashimoto/server4recog.git
+    % git clone https://github.com/AtsushiHashimoto/serv4recog.git
 
 # Requirements
 mongodb:			2.6.4
@@ -50,7 +50,7 @@ Congratulation!!
 
 # Tutorial
  
-- https://github.com/AtsushiHashimoto/server4recog/tutorial/Readme.md
+- https://github.com/AtsushiHashimoto/serv4recog/tutorial/Readme.md
 
 # Protocol
 ## Add sample
