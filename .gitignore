@@ -1,1 +1,5 @@
 myapp.conf
+db
+script/training_data
+tar_dir
+*.pyc
