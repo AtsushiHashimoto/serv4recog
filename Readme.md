@@ -13,7 +13,7 @@ Git Repo.:    https://github.com/AtsushiHashimoto/server4recog
 OSX 10.9
 
 # Download
-% git clone https://github.com/AtsushiHashimoto/server4recog.git
+    % git clone https://github.com/AtsushiHashimoto/server4recog.git
 
 # Requirements
 mongodb:			2.6.4
@@ -23,21 +23,27 @@ python:       2.7.8
 http://docs.python-guide.org/en/latest/starting/install/osx/
 
 python packages: execute following commands at the cloned directory.
-% pip install -r packages_requirements.txt
+
+    % pip install -r packages_requirements.txt
 
 # Settings
 rename 'myapp.conf.example' to 'myapp.conf' and edit the contents for your environment.
 
+    %cp myapp.conf.example myapp.conf
+
 # Execute
 At the serv4recog directory on a terminal, start up mongod.
-% mongod --dbpath ./db
+
+    % mongod --dbpath ./db
 
 Then, start up the server on another terminal
-% python app.py
+
+    % python app.py
 
 # Test
 execute the test script.
-% python script/serv4recog_tester.py
+
+    % python script/serv4recog_tester.py
 
 If you got recognition result without error, all the instlation processes completed.
 Congratulation!!
@@ -47,18 +53,17 @@ Congratulation!!
 ## Add sample
 HTTP GET:
 
-- http://localhost:8080/ml/my_db/svm_rbf/add?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/svm_rbf/add?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 HTTP POST:
  
-- http://localhost:8080/ml/my_db/svm_rbf/add
-- json_data=$SAMPLE_IN_JSON_FORMAT
+    http://localhost:8080/ml/my_db/svm_rbf/add
+    
 
-ml      : fixed path name.
-
-my_db   : name of separated database for your application.
-
-svm_rbf : ignored for _Add_ and some other operations. For train/predict/evaluate operations, this parameter designate type of recognizer. (currently, only svm_rbf is available.)
+- json_data=$SAMPLE-IN-JSON-FORMAT
+- ml      : fixed path name.
+- my_db   : name of separated database for your application.
+- svm_rbf : ignored for _Add_ and some other operations. For train/predict/evaluate operations, this parameter designate type of recognizer. (currently, only svm_rbf is available.)
 
 - CAUTION: In your custome applications, '{' and ':' should be url-encoded!! Please check specification of the HTTP library used in your application.
 
@@ -80,7 +85,7 @@ sample has following parameters.
  - _ex) {"svm_rbf::target-group":{"class001":0.9, "class002":0.1}}_
 
 ## Train
-- http://localhost:8080/ml/my_db/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ### ${CLASSIFIER-IN-JSON-FORMAT}
 classifier has following parameters.
@@ -90,19 +95,19 @@ classifier has following parameters.
  - _ex) {'feature_type':feature\_type, 'multi':multi, 'force':force, 'group':group}
 
 ## Predict
-- http://localhost:8080/ml/my_db/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 ## Evaluate
-- http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Samples
-- http://localhost:8080/ml/my_db/svm_rbf/clear_sample?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/svm_rbf/clear_sample?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Classifier
-- http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Group
-- http://localhost:8080/ml/my_db/svm_rbf/group?json_data=${GROUP_MEMBERS}
+    http://localhost:8080/ml/my_db/svm_rbf/group?json_data=${GROUP_MEMBERS}
 
 ### ${GROUP_MEMBERS}
 - group_name: name of target group
@@ -113,3 +118,4 @@ classifier has following parameters.
 
 # Contribution
 We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!
+
