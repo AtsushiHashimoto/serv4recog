@@ -56,11 +56,11 @@ Congratulation!!
 ## Add sample
 HTTP GET:
 
-    http://localhost:8080/ml/my_db/svm_rbf/add?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/feature_type/add?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 HTTP POST:
  
-    http://localhost:8080/ml/my_db/svm_rbf/add
+    http://localhost:8080/ml/my_db/feature_type/add
     
 
 - json_data=$SAMPLE-IN-JSON-FORMAT
@@ -75,8 +75,6 @@ sample has following parameters.
 
 - feature: float array that contains feature vector
  - _ex) {"feature":[0.1,0.9,0.3,0.7,0.5,0.5]}_
-- feature_type: the name of the above feature's type.
- - _ex) {"feature_type":"histogram_rgb_2bins_concatenate"}_
 - id: sample ID
  - _ex) {"id":"sample00001"}_
 - class: teacher signal for this sample. (optional, but required as training sample.)
@@ -88,33 +86,31 @@ sample has following parameters.
  - _ex) {"svm_rbf::target-group":{"class001":0.9, "class002":0.1}}_
 
 ## Train
-    http://localhost:8080/ml/my_db/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/feature_type/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ### ${CLASSIFIER-IN-JSON-FORMAT}
 classifier has following parameters.
-- feature_type: target feature type of samples.
 - force: force to overwrite a trained classifier if exists. (currently, always true.)
 - group: target sample groups (optional).
- - _ex) {'feature_type':feature\_type, 'multi':multi, 'force':force, 'group':group}
+ - _ex) {'multi':multi, 'force':force, 'group':group}
 
 ## Predict
-    http://localhost:8080/ml/my_db/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/feature_type/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 ## Evaluate
-    http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/feature_type/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Samples
-    http://localhost:8080/ml/my_db/svm_rbf/clear_sample?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/feature_type/clear_samples?json_data={"feature_type":$FeatureType}
 
 ## Clear Classifier
-    http://localhost:8080/ml/my_db/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/feature_type/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Group
-    http://localhost:8080/ml/my_db/svm_rbf/group?json_data=${GROUP_MEMBERS}
+    http://localhost:8080/ml/my_db/feature_type/group?json_data=${GROUP_MEMBERS}
 
 ### ${GROUP_MEMBERS}
 - group_name: name of target group
-- feature_type: target feature type of samples.
 - class_list: a list of (new) classes that are grouped into _group\_name_ the group.
 - _ex) {"group\_name":"target-group","class_list":["class001","class002","class003"]}_
 
