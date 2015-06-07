@@ -74,25 +74,35 @@ HTTP POST:
 sample has following parameters.
 
 - feature: float array that contains feature vector
- - _ex) {"feature":[0.1,0.9,0.3,0.7,0.5,0.5]}_
+ - _ex) "feature":[0.1,0.9,0.3,0.7,0.5,0.5]_
 - id: sample ID
- - _ex) {"id":"sample00001"}_
+ - _ex) "id":"sample00001"_
 - class: teacher signal for this sample. (optional, but required as training sample.)
- - _ex) {"class": "class001"}_
-- group: characterize samples to grouping. (optional)
- - _ex) {"group":["pca","target-group"]}
- - ("pca" suppose to group all samples whose feature are filtered by PCA process.)
+ - _ex) "class": "class001"_
 - likelihood: recognition results (only in output)
- - _ex) {"svm_rbf::target-group":{"class001":0.9, "class002":0.1}}_
+ - _ex) "likelihood:{"svm_rbf::${SELECTOR}":{"class001":0.9, "class002":0.1}}_
+- group: group tag that is used in ${SELECTOR}
+ - _ex) "group":["group01","test_samples"]_
+
+### ${SELECTOR}
+Selector limits samples involved in the calculation.
+- id: limit samples by its ID.
+ - _ex) {"$or":[{"id":"sample00001"},{"id":"sample00002"}]}_
+- class: limit samples by its class
+ - _ex) {"$or":[{"cls":"class001"},{"cls":"class002"}]}_
+- group: limit samples by its group
+ - _ex) {"group":{"$all":["group01"]}}"_
+
+The format follows to pymongo. For more detail, please see online documentation
+    http://docs.mongodb.org/manual/reference/operator/query/
+
 
 ## Train
-    http://localhost:8080/ml/my_db/feature_type/svm_rbf/train?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/feature_type/svm_rbf/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}
+- overwrite: overwrite previously trained classifier if true (optional)
 
-### ${CLASSIFIER-IN-JSON-FORMAT}
-classifier has following parameters.
-- force: force to overwrite a trained classifier if exists. (currently, always true.)
-- group: target sample groups (optional).
- - _ex) {'multi':multi, 'force':force, 'group':group}
+### ${BOOL}
+true or false
 
 ## Predict
     http://localhost:8080/ml/my_db/feature_type/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
@@ -107,13 +117,7 @@ classifier has following parameters.
     http://localhost:8080/ml/my_db/feature_type/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Group
-    http://localhost:8080/ml/my_db/feature_type/group?json_data=${GROUP_MEMBERS}
-
-### ${GROUP_MEMBERS}
-- group_name: name of target group
-- class_list: a list of (new) classes that are grouped into _group\_name_ the group.
-- _ex) {"group\_name":"target-group","class_list":["class001","class002","class003"]}_
-
+    http://localhost:8080/ml/my_db/feature_type/group?json_data={"selector":${SELECTOR}, "group":["selected_samples01"]}
 
 # Contribution
 We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!
