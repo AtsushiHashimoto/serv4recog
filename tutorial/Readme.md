@@ -34,7 +34,8 @@
     %python script/generate_samples.py class002 [0.5,0.5] [0.1,0.1] 20
 
 # Train Classifier
-        %wget -O - 'http://localhost:8080/ml/my_db/svm_rbf/train?json_data={"feature_type":"test_feature"}'
+        %wget -O - 'http://localhost:8080/ml/test_db/svm_rbf/train?json_data={"feature_type":"test_feature"}'
 
-
+# Predict unknown sample
+        
  
