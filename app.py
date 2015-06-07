@@ -47,27 +47,29 @@ def route_machine_learning_basic(database, feature_type, algorithm, operation):
 
 
 # algorithmの指定なくてもサンプルは追加可能
-@app.route('/ml/<database>/<feature_type>/add')
-def get_add(database):
-	if request.params.__dict__.has_key('json_data'):
-		json_data_s = request.params.json_data
+@app.route('/ml/<database>/<feature_type>/add', ['GET', 'POST'])
+def get_add(database,feature_type):
+	params = parse_params(request.params)
+	if params.has_key('json_data'):
+		json_data_s = params['json_data']
 	else:
 		return my_classifier.error_json("parameter 'json_data' must be set.")
 	db = mongo_client[database]
-	result = my_classifier.route(db,json_data_s,'add')
-	print "result" + result
+	result = my_classifier.route(db,json_data_s,'add',feature_type)
+	print result
 	return json.dumps(result,default=json_util.default)
 
 
-@app.route('/ml/<database>/<feature_type>/clear_samples')
-def get_clearsamples(database):
-	if request.params.__dict__.has_key('json_data'):
-		json_data_s = request.params.json_data
+@app.route('/ml/<database>/<feature_type>/clear_samples', ['GET', 'POST'])
+def get_clearsamples(database,feature_type,):
+	params = parse_params(request.params)
+	if params.has_key('json_data'):
+		json_data_s = params['json_data']
 	else:
 		return my_classifier.error_json("parameter 'json_data' must be set.")
 	db = mongo_client[database]
-	result = my_classifier.route(db,json_data_s,'clear_samples')
-	print "result" + result
+	result = my_classifier.route(db,json_data_s,'clear_samples',feature_type)
+	print result
 	return json.dumps(result,default=json_util.default)
 
 
