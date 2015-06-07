@@ -3,3 +3,6 @@ db
 script/training_data
 tar_dir
 *.pyc
+*.
+.DS_Store
+*.gz
