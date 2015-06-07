@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
 
 from sample import Sample
+from sample import ensure_list
 import mongointerface
 import json
 import sys
@@ -26,18 +27,8 @@ def is_success(json):
 
 
 
-ensure_list = mongointerface.ensure_list
-def cleaning_sample_query(json_data):
-    src_keys = ['group','class','id']
-    tar_keys = ['group','class','_id']    
-    if json_data.has_key('group'):
-        json_data['group'] = ensure_list(json_data['group'])
-    return mongointerface.cleaning_query(json_data,src_keys,tar_keys)
-
-
-
 def check_sample_source(data):
-    req_keys = ['id','feature_type','feature']
+    req_keys = ['feature']
     for key in req_keys:
         if data.has_key(key):
             continue
@@ -50,39 +41,35 @@ def check_sample_source(data):
 # MAIN FUNCTiON
 #############################################
 
-def route(db, json_data_s,operation,algorithm=None):
+def route(db, json_data_s, operation, feature_type, algorithm=None):
     print "function: route"
     print "operation => " + operation
     print json_data_s
     data = json.loads(json_data_s)
-    
-    # groupの指定に関する入力を整理してgroup_queryに格納する
-    # (ex_)group_all, (ex_)group_elemMatch, query4groupは削除する
-    group_query = mongointerface.generate_group_query(data)
-    
+        
     # train, predict, testではalgorithmに対応するモジュールをimportする
     if operation in {'train','predict','test'}:
         mod = __import__(algorithm+'.classifier', fromlist=['.'])
 
 # train
     if operation=='train':
-        return mod.__dict__[operation](db,data)
+        return mod.__dict__[operation](db,feature_type,data)
 
 # clear_classifier
     elif operation=='clear_classifier':
-        return mongointerface.clear_classifier(db,data,algorithm)
+        return mongointerface.clear_classifier(db, feature_type, data, feature_type, algorithm)
 
 # clear_samples
     elif operation=='clear_samples':
-        return mongointerface.clear_samples(db,data)
+        return mongointerface.clear_samples(db, feature_type, feature_type, data)
 
 # group
     elif operation=='group':
-        return mongointerface.group(db,data)
+        return mongointerface.group(db, feature_type, data)
 
 # evaluate
     elif operation=='evaluate':
-        return mongointerface.evaluate(db,data,algorithm)
+        return mongointerface.evaluate(db, feature_type, data, algorithm)
 
     # operations using sample
     else:
@@ -93,16 +80,26 @@ def route(db, json_data_s,operation,algorithm=None):
 
 # add
         if operation == 'add':
-            return mongointerface.add(db,sample)
+            return mongointerface.add(db,feature_type,sample)
 
 # predict
         elif operation == 'predict':
-            return mod.__dict__[operation](db,sample,group_query)
+            return mod.__dict__[operation](db, feature_type, data)
             
 # unknown operations (error)
     return error_json('Error: unknown operation %s.' % operation)
 
 
+# generate classifier's ID
+def generate_clf_id(alg,feature_type,selector):
+    id = feature_type + "::" + alg
+    if bool(selector):
+        print "generate_clf_id"
+        print selector
+        print json.dumps(selector)
+        id = id + "::" + json.dumps(selector)
+    return id
+    
 
 #############################################
 # DECORATOR
@@ -110,18 +107,27 @@ def route(db, json_data_s,operation,algorithm=None):
 def train_deco(algorithm):
     def recieve_func(func):
         @functools.wraps(func)
-        def wrapper(db,data):
-            # データを適当な形式にする
-            if not data.has_key('feature_type'):
-                return error_json("ERROR: feature_type must be designated")
-            feature_type = data['feature_type']
-            group_query = data['group_query']
+        def wrapper(db,feature_type, data):
+            # 訓練に使うサンプルのqueryを作る
+            selector = {}
+            if data.has_key('selector'):
+                selector = data['selector']
             
-            # クラスへの分類
-            samples = mongointerface.get_training_samples(db, feature_type, False, group_query)
-            if 1 >= samples.count():
-                return error_json('Too few training samples for %s.'%feature_type)
+            cls_id = generate_clf_id(algorithm,feature_type,selector)
+            prev_cls = db["classifiers"].find({"_id":cls_id})
+            overwrite = False
+            if data.has_key("overwrite") and data["overwrite"]=="true":
+                overwrite = True
 
+            if prev_cls and not overwrite:
+                return error_json("Classifier already exist. To overwrite it, set overwrite option to be true.")
+                
+                
+            # クラスへの分類
+            samples = db[feature_type].find(selector)
+            if 1 >= samples.count():
+                return error_json('Only %d samples are found.'%samples.count())
+                
             x = [[]] * samples.count()
             y = [0] * samples.count()
             class_count = collections.defaultdict(int)
@@ -151,15 +157,16 @@ def train_deco(algorithm):
 
             # 結果を保存
             ## algorithmに依存する部分
-            record = mongointerface.create_clf_query(algorithm,feature_type,group_query)
-            event = {'_id':record['_id'] + "::train"}
+            record = {}
+            record['_id'] = cls_id
+            event = {'_id':"train::" + record['_id']}
             
             record['clf'] = pickle.dumps(clf)
             record['class_name2id'] = class_map
             class_map_inv = {str(v):k for k, v in class_map.items()}
             record['class_id2name'] = class_map_inv
             try:
-                db["classifiers"].save(record)
+                db["classifiers"].replace_one({"_id":cls_id},record,True)
             except:
                 return error_json(sys.exc_info()[1])
 
@@ -173,32 +180,31 @@ def train_deco(algorithm):
 def predict_deco(algorithm):
     def recieve_func(func):
         @functools.wraps(func)
-        def wrapper(db,sample,group_query):
+        def wrapper(db,feature_type, data):
             # サンプルのグループを取ってくるだけ
             # Sample … (ft,_id,type,cls,group,likelihood,weight)
             print "function: predict"
-            feature_type = sample.type
-            
-            if not group_query:
-                group_query = mongointerface.generate_group_query({'group_all':sample.group})
 
+            selector = {}
+            if data.has_key('selector'):
+                selector = data.pop('selector')
+            sample = Sample(data)
 
             ## algorithmに依存する部分
-            query = mongointerface.create_clf_query(algorithm,feature_type,group_query)
-
+            clf_id = generate_clf_id(algorithm,feature_type,selector)
 
             # 予測部
-            collection = db["classifiers"]
-            
-            print query
+            collection = db["classifiers"]            
             
             try:
-                record = collection.find_one(query)
+                record = collection.find_one({'_id':clf_id})
+                if record == None:
+                    return error_json("No classifier was found.")
                 clf = pickle.loads(record['clf'])
             except:
+                
                 return error_json(sys.exc_info()[1])
             
-
 
             # algorithmに応じた処理(func)を行う
             likelihood_list = func(clf,sample)
@@ -210,17 +216,17 @@ def predict_deco(algorithm):
 
 
             ## algorithmに依存する部分
-            ll_id = mongointerface.create_clf_likelihood_marker(algorithm,group_query)
+            clf_id = generate_clf_id(algorithm,feature_type,selector)
                         
             # 予測結果をデータベースへ追加
-            sample.likelihood[ll_id] = likelihood_dict
+            sample.likelihood[clf_id] = likelihood_dict
+            
+            add_result = mongointerface.add(db,feature_type,sample)
+            
             result = success_json()
-            result['event'] = {'clf_id':query['_id']}
+            result['event'] = {'_id':"predict::"+clf_id+"::"+str(sample._id), 'sub_event':add_result}
             result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
             
-
-            mongointerface.add(db,sample)            
-            print result
             return result 
         return wrapper
     return recieve_func
