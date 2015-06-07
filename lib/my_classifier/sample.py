@@ -1,15 +1,26 @@
 # -*- coding: utf-8 -*-
 import json
+def ensure_list(elem):
+    if isinstance(elem,list):
+        return elem
+    else:
+        if elem:
+            return [elem]
+        else:
+            return []
 
+
+            
 class Sample:
-	def __init__(self, json_data):
+            
+        def __init__(self, json_data):
 		self.ft = json_data['feature']
-		self._id = json_data['id']
-		self.type = json_data['feature_type']
+		if json_data.has_key('id'):
+			self._id = json_data['id']
 		if json_data.has_key('class'):
 			self.cls = json_data['class']
 		if json_data.has_key('group'):
-			self.group = json_data['group']
+			self.group = self.ensure_list(json_data['group'])
 		else:
 			self.group = []
 		self.likelihood = {}
