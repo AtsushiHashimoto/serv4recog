@@ -20,7 +20,7 @@ class Sample:
 		if json_data.has_key('class'):
 			self.cls = json_data['class']
 		if json_data.has_key('group'):
-			self.group = self.ensure_list(json_data['group'])
+			self.group = ensure_list(json_data['group'])
 		else:
 			self.group = []
 		self.likelihood = {}

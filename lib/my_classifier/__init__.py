@@ -1,7 +1,6 @@
 #-*- coding:utf-8 -*-
 
 from sample import Sample
-from sample import ensure_list
 import mongointerface
 import json
 import sys
@@ -46,6 +45,9 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     print "operation => " + operation
     print json_data_s
     data = json.loads(json_data_s)
+    
+    if not data.has_key('selector'):
+        data['selector'] = {}
         
     # train, predict, testではalgorithmに対応するモジュールをimportする
     if operation in {'train','predict','test'}:
@@ -57,11 +59,11 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 
 # clear_classifier
     elif operation=='clear_classifier':
-        return mongointerface.clear_classifier(db, feature_type, data, feature_type, algorithm)
+        return mongointerface.clear_classifier(db, feature_type, data, algorithm)
 
 # clear_samples
     elif operation=='clear_samples':
-        return mongointerface.clear_samples(db, feature_type, feature_type, data)
+        return mongointerface.clear_samples(db, feature_type, data)
 
 # group
     elif operation=='group':
@@ -124,9 +126,9 @@ def train_deco(algorithm):
                 
                 
             # クラスへの分類
-            samples = db[feature_type].find(selector)
+            samples = mongointerface.get_training_samples(db,feature_type,False,selector)
             if 1 >= samples.count():
-                return error_json('Only %d samples are found.'%samples.count())
+                return error_json('Only %d samples are hit as training samples.'%samples.count())
                 
             x = [[]] * samples.count()
             y = [0] * samples.count()
@@ -144,10 +146,14 @@ def train_deco(algorithm):
             class_map = {}
             class_weight = {}
             for i,cls in enumerate(class_list):
+                print i
+                print cls
                 class_map[cls] = i
                 class_weight[i] = float(len(class_list) * (samples.count() - class_count[cls])) / float(samples.count())
                     
+            print class_map
             for i in range(len(y)):
+                
                 y[i] = class_map[y[i]]
 
 

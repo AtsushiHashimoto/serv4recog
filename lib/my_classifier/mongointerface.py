@@ -37,8 +37,8 @@ def generate_event_id(operation,feature_type,option=None):
 ################################################
 def access_history_log(func):
     @functools.wraps(func)
-    def wrapper(db,*args,**kwargs):
-        result_json = func(db,*args,**kwargs)
+    def wrapper(db, feature_type, *args,**kwargs):
+        result_json = func(db,feature_type, *args,**kwargs)
         if my_classifier.is_success(result_json):
             access_history = db['timestamps']
             event = result_json['event']
@@ -47,7 +47,7 @@ def access_history_log(func):
             event['time'] = time
             try:
                 print event
-                access_history.insert_one(event)
+                access_history.replace_one({'_id':event['_id']},event,True)
             except:
                 return my_classifier.error_json(sys.exc_info()[1])
         return result_json
@@ -77,7 +77,7 @@ def sample_treater(func):
 def get_training_samples(db,feature_type, clustering = False, selector={}):
     query = selector
     if not clustering:
-        query['cls'] = {"$ne": None}
+        query['cls'] = {"$exists": True}
     return db[feature_type].find(query)
 
 
@@ -101,6 +101,10 @@ def get_predicted_samples(db,feature_type,algorithm,selector={}):
 def add(db, feature_type, sample):
     print "function: add"
     collection = db[feature_type]
+
+    if collection.find({'_id':sample._id}).count()>0:
+        return my_classifier.error_json("sample " + sample._id + " already exists.")
+    
     try:
         collection.insert_one(sample.__dict__)
     except:
@@ -115,8 +119,6 @@ def clear_classifier(db, feature_type, data, algorithm):
     if algorithm==None:
         return my_classifier.error_json('algorithm must be designated')
 
-    if not data.has_key('feature_type'):
-        return my_classifier.error_json('feature_type must be designated.')
 
     selector = data["selector"]
     cls_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
@@ -127,17 +129,27 @@ def clear_classifier(db, feature_type, data, algorithm):
         return my_classifier.error_json(sys.exc_info()[1])
 
     result = my_classifier.success_json()
-    result['event']['_id'] = __name__ + "::" + cls_id    
+    result['event'] = {'_id': generate_event_id('clear_classifier', feature_type, cls_id )}   
     return result
+
+
 
 @access_history_log
 def clear_samples(db,feature_type,data):
     print "in clear_samples"
+    query = {}
     query = data['selector']
     collection = db[feature_type]
-    collection.remove(query)
+    data_count = collection.find(query).count()
+    if data_count==0:
+        return my_classifier.error_json("No samples are hit.")
+    try:
+        collection.remove(query)
+    except:
+        return my_classifier.error_json(sys.exc_info()[1])
     result = my_classifier.success_json()
-    result['event'] = {'_id': generate_event_id(__name__,feature_type,json.dumps(query))}
+    
+    result['event'] = {'_id': generate_event_id('clear_samples',feature_type,json.dumps(query))}
     return result
 
 ######################
@@ -146,7 +158,10 @@ def clear_samples(db,feature_type,data):
 @access_history_log
 def group(db,feature_type,data):
     print "function: group"
+    if not data.has_key('group'):
+        return my_classifier.error_json("'group' must be set.")
     group_name = data['group']
+    
     selector = data['selector']
     
     collections = db[feature_type]
@@ -163,7 +178,7 @@ def group(db,feature_type,data):
             _id = s['_id']
             collections.update({"_id":_id},{"$set":{'group':groups}})
     result = my_classifier.success_json()
-    result['event'] = {'_id':generate_event_id(__name__,feature_type,[group_name,json.dumps(selector)])}
+    result['event'] = {'_id':generate_event_id('group',feature_type,[group_name,json.dumps(selector)])}
     return result
     
 
@@ -174,6 +189,7 @@ def group(db,feature_type,data):
 @access_history_log
 def evaluate(db,feature_type, data,algorithm):
     print "function: evaluate"
+    
     selector = data['selector']
 
     
@@ -211,7 +227,7 @@ def evaluate(db,feature_type, data,algorithm):
 
     result = my_classifier.success_json()
 
-    result['event'] = {'_id':generate_event_id(__name__, feature_type, selector)}
+    result['event'] = {'_id':generate_event_id('evaluate', feature_type, selector)}
 
     id2name = record['class_id2name']
     result['class_list'] = [id2name[k] for k in sorted(id2name.keys())]

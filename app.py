@@ -53,7 +53,7 @@ def get_add(database,feature_type):
 	if params.has_key('json_data'):
 		json_data_s = params['json_data']
 	else:
-		return my_classifier.error_json("parameter 'json_data' must be set.")
+		json_data_s = "{}"
 	db = mongo_client[database]
 	result = my_classifier.route(db,json_data_s,'add',feature_type)
 	print result
@@ -66,7 +66,7 @@ def get_clearsamples(database,feature_type,):
 	if params.has_key('json_data'):
 		json_data_s = params['json_data']
 	else:
-		return my_classifier.error_json("parameter 'json_data' must be set.")
+		json_data_s = "{}"
 	db = mongo_client[database]
 	result = my_classifier.route(db,json_data_s,'clear_samples',feature_type)
 	print result
