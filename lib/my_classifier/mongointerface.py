@@ -58,9 +58,6 @@ def access_history_log(func):
 def sample_treater(func):
     @functools.wraps(func)
     def wrapper(db,feature_type,sample,*args,**kwargs):
-        if not sample.__dict__.has_key('_id'):
-            sample._id = "sample_" +  "%012d" % db[feature_type].find().count()
-
         result_json = func(db,feature_type,sample,*args,**kwargs)
         if my_classifier.is_success(result_json):            
             option = sample._id
