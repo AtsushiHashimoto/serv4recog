@@ -116,12 +116,12 @@ def train_deco(algorithm):
                 selector = data['selector']
             
             cls_id = generate_clf_id(algorithm,feature_type,selector)
-            prev_cls = db["classifiers"].find({"_id":cls_id})
+            prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
             if data.has_key("overwrite") and data["overwrite"]=="true":
                 overwrite = True
 
-            if prev_cls and not overwrite:
+            if prev_clf.count()>0 and not overwrite:
                 return error_json("Classifier already exist. To overwrite it, set overwrite option to be true.")
                 
                 
