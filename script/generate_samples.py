@@ -38,9 +38,9 @@ if __name__ == '__main__':
     conn = a.get_connection("http://localhost:8080")
     
     database = 'my_db'
-    algorithm = 'svm_rbf'
-    url_path = "/ml/%s/%s/" % (database,algorithm)
     feature_type = 'test_feature'
+    algorithm = 'svm_rbf'
+    url_path = "/ml/%s/%s/%s/" % (database,feature_type,algorithm)
     # IDのためのランダムな文字列生成
     id_base = class_name + "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for x in xrange(10)])
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         feature_vec = generate_sample(mean_vector, std_dev_vector)
 
     	# 生成した特徴量を認識用サーバに投げて登録する
-        sample = {'id':id_base+'-'+`i`, 'class': class_name, 'feature': feature_vec, 'feature_type': feature_type, 'groups':'a'}
+        sample = {'id':id_base+'-'+`i`, 'class': class_name, 'feature': feature_vec, 'group':'a'}
         print sample
         try:
             response = conn.request('POST',url_path + operation, {'json_data': json.dumps(sample)})
