@@ -121,15 +121,21 @@ def clear_classifier(db, feature_type, data, algorithm):
 
 
     selector = data["selector"]
-    cls_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
+    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
+    query = {'_id':clf_id}
+    
+    collection = db['classifiers']
+    data_count = collection.find(query).count()
+    if data_count==0:
+        return my_classifier.error_json("No classifiers are hit.")
     
     try:
-        db['classifiers'].remove({"_id":cls_id})
+        db['classifiers'].remove(query)
     except:
         return my_classifier.error_json(sys.exc_info()[1])
 
     result = my_classifier.success_json()
-    result['event'] = {'_id': generate_event_id('clear_classifier', feature_type, cls_id )}   
+    result['event'] = {'_id': generate_event_id('clear_classifier', feature_type, clf_id )}   
     return result
 
 
