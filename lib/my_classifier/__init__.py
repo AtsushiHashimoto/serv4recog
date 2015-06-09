@@ -78,6 +78,11 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
         check_result = check_sample_source(data)
         if not is_success(check_result):
             return check_result
+
+        # generate sample ID automatically (can be collapse if several samples add at once)
+        if not data.has_key('id'):
+            data['id'] = "sample_" +  "%012d" % db[feature_type].find().count()
+
         sample = Sample(data)
 
 # add
@@ -86,7 +91,7 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 
 # predict
         elif operation == 'predict':
-            return mod.__dict__[operation](db, feature_type, data)
+            return mod.__dict__[operation](db, feature_type, sample, data['selector'])
             
 # unknown operations (error)
     return error_json('Error: unknown operation %s.' % operation)
@@ -186,16 +191,11 @@ def train_deco(algorithm):
 def predict_deco(algorithm):
     def recieve_func(func):
         @functools.wraps(func)
-        def wrapper(db,feature_type, data):
+        def wrapper(db,feature_type, sample, selector):
             # サンプルのグループを取ってくるだけ
             # Sample … (ft,_id,type,cls,group,likelihood,weight)
             print "function: predict"
-
-            selector = {}
-            if data.has_key('selector'):
-                selector = data.pop('selector')
-            sample = Sample(data)
-
+            
             ## algorithmに依存する部分
             clf_id = generate_clf_id(algorithm,feature_type,selector)
 
