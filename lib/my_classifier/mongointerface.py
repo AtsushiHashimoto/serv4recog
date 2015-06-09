@@ -16,6 +16,7 @@ from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_
 
 from my_classifier.sample import ensure_list
 
+import copy
 
 ################################################
 ### query maker
@@ -81,12 +82,6 @@ def get_training_samples(db,feature_type, clustering = False, selector={}):
 def get_any_samples(feature_type, group_all=[],selector={}):
         return get_training_samples(feature_type,True, selector)
 
-def get_predicted_samples(db,feature_type,algorithm,selector={}):
-    query = selector
-    l_key = my_classifier.generate_clf_id(algorithm,feature_type,selector)
-    query['likelihood::'+l_key] = {"$exists":True}#:{'$ne':None}}}
-    #    print query
-    return db[feature_type].find(query)
 
 
 ################################################
@@ -196,30 +191,29 @@ def evaluate(db,feature_type, data,algorithm):
     selector = data['selector']
 
     
-    samples = get_predicted_samples(db, feature_type, algorithm, selector)
-    #print samples.count()
-    
     # class_name2idのために識別器のデータを呼ぶ
-    query = my_classifier.mongointerface.create_clf_query(algorithm,feature_type,selector)
-    print query
+    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
+    print "clf_id: " + clf_id
+    print ""
     try:
-        record = db["classifiers"].find_one(query)
+        record = db["classifiers"].find_one({'_id':clf_id})
+        if record == None:
+            return my_classifier.error_json("No classifier was found.")
     except:
         return my_classifier.error_json(sys.exc_info()[1])
     print record
 
     name2id = record['class_name2id']
-    l_marker = my_classifier.generate_clf_id(algorithm,feature_type,selector)
-    print l_marker
     y = []
     y_pred = []
     weights = []
-
+        
+    samples = db[feature_type].find({'likelihood.'+clf_id : {"$exists":True}})
     for s in samples:
-        if not s['likelihood'].has_key(l_marker):
+        if not s['likelihood'].has_key(clf_id):
             continue
         y.append(name2id[s['cls']])
-        likelihood = dict(s['likelihood'][l_marker])
+        likelihood = dict(s['likelihood'][clf_id])
         pred_name = max([(v,k) for k,v in likelihood.items()])[1]
         y_pred.append(name2id[pred_name])
         weights.append(float(s['weight']))
