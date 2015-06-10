@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import random
 import json
-
+from sys import exit
 
 if __name__ == '__main__':
 	import sys
@@ -73,24 +73,19 @@ if __name__ == '__main__':
 	conn = a.get_connection("http://localhost:8080")
 	
 	database = 'test'
-	# ここでalgorithm(ディレクトリ名)を指定する
+	feature_type = 'test_dim%03d' % feature_dim
 	algorithm = 'svm_linear'
 
-	# groupを指定するテスト 
-	group = ['target_group']
-	# group = []
+	url_path1 = "/ml/%s/%s/" % (database,feature_type)
+	url_path2 = "%s%s/" % (url_path1,algorithm)
 
-	url_path = "/ml/%s/%s/" % (database,algorithm)
-
-	feature_type = 'test_dim%03d' % feature_dim
 
 	# まず，以前の内容を消去する
 	operation = 'clear_samples'
 	print operation
 
-	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group})}
 	try:
-		response = conn.request('POST',url_path + operation, params)
+		response = conn.request('POST',url_path1 + operation)
 	except:
 		for message in sys.exc_info():
 			print message
@@ -99,16 +94,12 @@ if __name__ == '__main__':
 	result = json.loads(response.data)
 	print result
 
-	if result['status'] != 'success':
-		print "ERROR: failed to clear samples"
-		exit()
 
 	operation = 'clear_classifier'
 	print operation
 	
-	params = {'json_data':json.dumps({'feature_type':feature_type,'group':group})}
 	try:
-		response = conn.request('POST',url_path + operation, params)
+		response = conn.request('POST',url_path2 + operation)
 	except:
 		for message in sys.exc_info():
 			print message
@@ -117,9 +108,6 @@ if __name__ == '__main__':
 	result = json.loads(response.data)
 	print result
 	
-	if result['status'] != 'success':
-		print "ERROR: failed to clear classifier"
-		exit()
 
 
 	# 1つずつサンプルを追加
@@ -127,10 +115,10 @@ if __name__ == '__main__':
 	print operation
 
 	for i, (_y, _x) in enumerate(zip(y,x)):
-		sample = {'id':i, 'class': _y, 'feature': _x, 'feature_type': feature_type, 'group': group}
+		sample = {'id':i, 'class': _y, 'feature': _x}
 		print sample
 		try:
-			response = conn.request('POST',url_path + operation, {'json_data': json.dumps(sample)})
+			response = conn.request('POST',url_path1 + operation, {'json_data': json.dumps(sample)})
 		except:
 			for message in sys.exc_info():
 				print message
@@ -149,8 +137,7 @@ if __name__ == '__main__':
 
 	# order: 学習させる際のオプション 
 	# order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)
-	order = {'feature_type':feature_type, 'force':force, 'group':group}
-	response = conn.request('POST',url_path + operation, {'json_data':json.dumps(order)})
+	response = conn.request('POST',url_path2 + operation)
 	result = json.loads(response.data)
 	print result
 
@@ -169,10 +156,10 @@ if __name__ == '__main__':
 		
 		
 		feature = generate_sample(cores['ave'][class_id],cores['sigma'][class_id])
-		sample = {'id':offset+i, 'class': class_name, 'feature': feature, 'feature_type': feature_type, 'group': group}
+		sample = {'id':offset+i, 'class': class_name, 'feature': feature}
 		
 		try:
-			response = conn.request('POST',url_path + operation, {'json_data':json.dumps(sample)})
+			response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps(sample)})
 		except:
 			for message in sys.exc_info():
 				print message
@@ -185,8 +172,7 @@ if __name__ == '__main__':
 
 	# 識別結果の精度を問い合わせる
 	operation = 'evaluate'
-	order = {'feature_type':feature_type,'group':group}
-	response = conn.request('POST', url_path + operation, {'json_data':json.dumps(order)})
+	response = conn.request('POST', url_path2 + operation)
 	result = json.loads(response.data)
 	print "class_list: %s"% " ".join(result['class_list'])
 	for key,val in result.items():
