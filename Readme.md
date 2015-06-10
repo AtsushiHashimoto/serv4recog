@@ -1,6 +1,6 @@
 # About this project
 Project Name: Server4recog
-Verion:	      0.1
+Verion:	      0.2
 Git Repo.:    https://github.com/AtsushiHashimoto/serv4recog
 
 # What is serv4recog?
@@ -56,19 +56,19 @@ Congratulation!!
 ## Add sample
 HTTP GET:
 
-    http://localhost:8080/ml/my_db/feature_type/add?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/my_feature/add?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 HTTP POST:
  
-    http://localhost:8080/ml/my_db/feature_type/add
+    http://localhost:8080/ml/my_db/my_feature/add
     
 
 - json_data=$SAMPLE-IN-JSON-FORMAT
-- ml      : fixed path name.
-- my_db   : name of separated database for your application.
-- svm_rbf : ignored for _Add_ and some other operations. For train/predict/evaluate operations, this parameter designate type of recognizer. (currently, only svm_rbf is available.)
+- ml      : fixed path name (you can not change).
+- my_db   : name of database. You can use different name for each of your application.
+- my_feature : name of feature_type. You can use any string for each type of feature vector. (e.g. rgb_histogram, hu_moment, SIFT, et al.)
 
-- CAUTION: In your custome applications, '{' and ':' should be url-encoded!! Please check specification of the HTTP library used in your application.
+- CAUTION: In your custome applications, '{' and ':' in URL string should be url-encoded!! Please check specification of the HTTP library used in your application.
 
 ### ${SAMPLE-IN-JSON-FORMAT}
 sample has following parameters.
@@ -98,26 +98,27 @@ The format follows to pymongo. For more detail, please see online documentation
 
 
 ## Train
-    http://localhost:8080/ml/my_db/feature_type/svm_rbf/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}
+    http://localhost:8080/ml/my_db/my_feature/svm_rbf/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}
+- svm_rbf : name of classifier. currently, svm_rbf and svm_linear are supported.
 - overwrite: overwrite previously trained classifier if true (optional)
 
 ### ${BOOL}
 true or false
 
 ## Predict
-    http://localhost:8080/ml/my_db/feature_type/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/my_feature/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
 
 ## Evaluate
-    http://localhost:8080/ml/my_db/feature_type/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/my_feature/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Clear Samples
-    http://localhost:8080/ml/my_db/feature_type/clear_samples?json_data={"feature_type":$FeatureType}
+    http://localhost:8080/ml/my_db/my_feature/clear_samples?json_data={"feature_type":$FeatureType}
 
 ## Clear Classifier
-    http://localhost:8080/ml/my_db/feature_type/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/my_feature/classifier/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
 
 ## Group
-    http://localhost:8080/ml/my_db/feature_type/group?json_data={"selector":${SELECTOR}, "group":["selected_samples01"]}
+    http://localhost:8080/ml/my_db/my_feature/group?json_data={"selector":${SELECTOR}, "group":["selected_samples01"]}
 
 # Contribution
 We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!
