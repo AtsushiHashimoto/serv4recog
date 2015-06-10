@@ -12,18 +12,14 @@
 
  - run following command @ terminal C
 
-        %wget -O - 'http://localhost:8080/ml/test_db/svm_rbf/add?json_data={"feature":[0.1,0.9],"feature_type":"test_feature","id":"test001","class": "class001"}'
+        %wget -O - 'http://localhost:8080/ml/test_db/test_feature/add?json_data={"feature":[0.1,0.9],"class": "class001"}' | cat
 
  - Above command send HTTP GET request to server. The query orders the server to add a feature vector (0.1,0.9), whose class name is "class001".
- - feature_type is a string which distinguished, for example, rgb histogram from hu moment.
- - id is a string which determine this sample feature.
- - You can add the sample via web browser, too. Just copy the above URL to address bar, and press return key.
- - CAUTION: you cannot add features of the same ID. From the second attempt, it will return 500 error.
+ - You can send these commands via web browser, too. Just copy the above URL to address bar, and press return key.
 
 ## Check the added sample
 
 - you can check the samples via mongo interface
-
         %mongo
         >use my_db
         >db.test_feature.find()[0]
@@ -34,8 +30,11 @@
     %python script/generate_samples.py class002 [0.5,0.5] [0.1,0.1] 20
 
 # Train Classifier
-        %wget -O - 'http://localhost:8080/ml/test_db/svm_rbf/train?json_data={"feature_type":"test_feature"}'
+    %wget -O - 'http://localhost:8080/ml/test_db/test_feature/svm_rbf/train' | cat
 
 # Predict unknown sample
-        
+    %wget -O - 'http://localhost:8080/ml/test_db/test_feature/svm_rbf/predict?json_data={"feature":[0.2,0.8]}' | cat
  
+# Clear all the samples and the trained classifier
+    %wget -O - 'http://localhost:8080/ml/test_db/test_feature/clear_samples' | cat
+    %wget -O - 'http://localhost:8080/ml/test_db/test_feature/svm_rbf/clear_classifier' | cat
