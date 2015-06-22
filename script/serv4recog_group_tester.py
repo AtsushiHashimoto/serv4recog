@@ -159,7 +159,7 @@ if __name__ == '__main__':
     print operation
 
     # order: 学習させる際のオプション 
-    response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'selector':selector})})
+    response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'selector':selector,'overwrite':'true'})})
     result = json.loads(response.data)
     print "result: " + json.dumps(result)
 

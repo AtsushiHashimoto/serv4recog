@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     # order: 学習させる際のオプション 
     # order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)
-    response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'option':option})})
+    response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'option':option,'overwrite':'true'})})
     result = json.loads(response.data)
     print "result: " + json.dumps(result)
 
