@@ -18,9 +18,7 @@ if __name__ == '__main__':
     class_name = args[1]
     mean_vector= json.loads(args[2])
     std_dev_vector = json.loads(args[3])
-    sample_num = int(args[4])
-
- 
+    sample_num = int(args[4]) 
 
     # 各クラスのサンプルをガウス分布に基づいてランダムに生成
     def generate_sample(average_vec,sigma_vec):
@@ -51,7 +49,7 @@ if __name__ == '__main__':
         feature_vec = generate_sample(mean_vector, std_dev_vector)
 
     	# 生成した特徴量を認識用サーバに投げて登録する
-        sample = {'id':id_base+'-'+`i`, 'class': class_name, 'feature': feature_vec, 'group':'a'}
+        sample = {'id':id_base+'-'+`i`, 'ground_truth': class_name, 'feature': feature_vec, 'group':'a'}
         print sample
         try:
             response = conn.request('POST',url_path + operation, {'json_data': json.dumps(sample)})
