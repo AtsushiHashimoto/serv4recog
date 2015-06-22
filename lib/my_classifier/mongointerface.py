@@ -47,7 +47,7 @@ def access_history_log(func):
             #    print time
             event['time'] = time
             try:
-                print event
+                #print event
                 access_history.replace_one({'_id':event['_id']},event,True)
             except:
                 return my_classifier.error_json(sys.exc_info()[1])
@@ -164,7 +164,7 @@ def band(db,feature_type,data):
     collections = db[feature_type]
 
     samples = collections.find(selector)
-    print samples
+    #print samples
     if samples.count() == 0:
         return my_classifier.error_json("ERROR: no samples are hit.")
     for s in samples:
@@ -207,34 +207,39 @@ def disband(db,feature_type,data):
 ######################
 @access_history_log
 def evaluate(db,feature_type, data,algorithm):
-    print "function: evaluate"
+    #print "function: evaluate"
         
     # class_name2idのために識別器のデータを呼ぶ
     clf_id = my_classifier.generate_clf_id(algorithm,feature_type,data)
-    # print "clf_id: " + clf_id
+    #print "clf_id: " + clf_id
     try:
         record = db["classifiers"].find_one({'_id':clf_id})
         if record == None:
             return my_classifier.error_json("No classifier was found.")
     except:
         return my_classifier.error_json(sys.exc_info()[1])
-    print record
+    #print record
 
     name2id = record['class_name2id']
     y = []
     y_pred = []
     weights = []
-        
-    samples = db[feature_type].find({'likelihood.'+clf_id : {"$exists":True}})
+    
+    selector = data['selector']
+    selector['likelihood.'+clf_id] = {"$exists":True}
+    print selector
+    samples = get_training_samples(db,feature_type,False,selector)
     for s in samples:
-        print s
         if not s['likelihood'].has_key(clf_id):
             continue
         y.append(name2id[s['ground_truth']])
         likelihood = dict(s['likelihood'][clf_id])
         pred_name = max([(v,k) for k,v in likelihood.items()])[1]
         y_pred.append(name2id[pred_name])
-        weights.append(float(s['weight']))
+        if s.has_key('weight'):
+            weights.append(float(s['weight']))
+        else:
+            weights.append(1.0)
         
     
     if not y:
@@ -256,12 +261,12 @@ def evaluate(db,feature_type, data,algorithm):
 
     result['confusion_matrix'] = json.dumps(cm_json_searizable)
 
-    print precision_score(y,y_pred,sample_weight=weights)
-    print precision_score(y,y_pred)
-    result['precision_score'] = precision_score(y,y_pred,sample_weight=weights)
-    result['recall_score'] = recall_score(y,y_pred,sample_weight=weights)
-    result['f1_score'] = f1_score(y,y_pred,sample_weight=weights)
-
+    #print precision_score(y,y_pred,sample_weight=weights)
+    #print precision_score(y,y_pred)
+    #print weights
+    result['precision_score'] = precision_score(y,y_pred,average=None)#,sample_weight=weights)
+    result['recall_score'] = recall_score(y,y_pred,average=None)#,sample_weight=weights)
+    result['f1_score'] = f1_score(y,y_pred,average=None)#,sample_weight=weights)
     return result
 
 if __name__ == '__main__':
