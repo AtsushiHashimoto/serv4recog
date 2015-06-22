@@ -150,11 +150,11 @@ def clear_samples(db,feature_type,data):
     return result
 
 ######################
-# group
+# band
 ######################
 @access_history_log
-def group(db,feature_type,data):
-    print "function: group"
+def band(db,feature_type,data):
+    print "function: band"
     if not data.has_key('group'):
         return my_classifier.error_json("'group' must be set.")
     group_name = data['group']
@@ -175,10 +175,32 @@ def group(db,feature_type,data):
             _id = s['_id']
             collections.update({"_id":_id},{"$set":{'group':groups}})
     result = my_classifier.success_json()
-    result['event'] = {'_id':generate_event_id('group',feature_type,[group_name,json.dumps(selector)])}
+    result['event'] = {'_id':generate_event_id('band',feature_type,[group_name,json.dumps(selector)])}
     return result
     
+######################
+# disband
+######################
+@access_history_log
+def disband(db,feature_type,data):
+    print "function: disband"
+    if not data.has_key('group'):
+        return my_classifier.error_json("'group' must be set.")
+    group_name = data['group']
+    collections = db[feature_type]
 
+    samples = collections.find({'group':{'$all':[group_name]}})
+    if samples.count() == 0:
+        return my_classifier.error_json("ERROR: no samples are hit.")
+    for s in samples:
+        groups = s['group']
+        while group_name in groups:
+            groups.remove(group_name)
+        _id = s['_id']
+        collections.update({"_id":_id},{"$set":{'group':groups}})
+    result = my_classifier.success_json()
+    result['event'] = {'_id':generate_event_id('disband',feature_type,group_name)}
+    return result   
 
 ######################
 # evaluate
