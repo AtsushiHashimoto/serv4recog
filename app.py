@@ -22,60 +22,52 @@ mongo_client = MongoClient(app.config['myapp.mongo_host'],int(app.config['myapp.
 
 @error('404')
 def error404(error):
-	return '{"status": "Error", "message":"No such algorithm"}'
+         return '{"status": "Error", "message":"No such algorithm"}'
 
 def parse_params(params):
-	hash = {}
-	for key, val in params.items():
-		hash[key] = val
-	return hash
+         hash = {}
+         for key, val in params.items():
+                  hash[key] = val
+         return hash
 
 # operation: add, clear, train, predict
 @app.route('/ml/<database>/<feature_type>/<algorithm>/<operation>', ['GET', 'POST'])
 def route_machine_learning_basic(database, feature_type, algorithm, operation):
-	print 'function: route'
-	params = parse_params(request.params)
-	if params.has_key('json_data'):
-		json_data_s = params['json_data']
-	else:
-		json_data_s = "{}"
-	print "param: " + json_data_s
-	db = mongo_client[database]
-	result = my_classifier.route(db, json_data_s, operation, feature_type, algorithm)
-	print result
-	return json.dumps(result,default=json_util.default)
+         print 'function: route'
+         params = parse_params(request.params)
+         if params.has_key('json_data'):
+                  json_data_s = params['json_data']
+         else:
+                  json_data_s = "{}"
+         print "param: " + json_data_s
+         db = mongo_client[database]
+         result = my_classifier.route(db, json_data_s, operation, feature_type, algorithm)
+         print result
+         return json.dumps(result,default=json_util.default)
 
 
-# algorithmの指定なくてもサンプルは追加可能
-@app.route('/ml/<database>/<feature_type>/add', ['GET', 'POST'])
-def get_add(database,feature_type):
-	params = parse_params(request.params)
-	if params.has_key('json_data'):
-		json_data_s = params['json_data']
-	else:
-		json_data_s = "{}"
-	db = mongo_client[database]
-	result = my_classifier.route(db,json_data_s,'add',feature_type)
-	print result
-	return json.dumps(result,default=json_util.default)
-
-
-@app.route('/ml/<database>/<feature_type>/clear_samples', ['GET', 'POST'])
-def get_clearsamples(database,feature_type,):
-	params = parse_params(request.params)
-	if params.has_key('json_data'):
-		json_data_s = params['json_data']
-	else:
-		json_data_s = "{}"
-	db = mongo_client[database]
-	result = my_classifier.route(db,json_data_s,'clear_samples',feature_type)
-	print result
-	return json.dumps(result,default=json_util.default)
+# algorithmの指定なくても可能な操作
+@app.route('/ml/<database>/<feature_type>/<operation>', ['GET', 'POST'])
+def route_sample_treatment(database,feature_type,operation):
+    # add, clear_samples, band, disband
+    if operation not in ['add','clear_samples','band','disband']:
+        return {"status": "Error", "message":"operation '%s' without algorithm in the url is not allowed" % operation}
+    
+    params = parse_params(request.params)
+    if params.has_key('json_data'):
+        json_data_s = params['json_data']
+    else:
+        json_data_s = "{}"
+    db = mongo_client[database]
+    result = my_classifier.route(db,json_data_s,operation,feature_type)
+    print result
+    return json.dumps(result,default=json_util.default)
 
 
 
 
-#	one-out-leave
+
+#         one-out-leave
 @app.get('/ml/<database>/<feature_type>/<algorithm>/one-out-leave/<data_id>')
 def get_one_out_leave(database,algorithm,data_id):
 	db = mongo_client[database]
@@ -84,13 +76,19 @@ def get_one_out_leave(database,algorithm,data_id):
 # cross-validation
 @app.get('/ml/<database>/<feature_type>/<algorithm>/cross-validation/<fold_num:int>')
 def get_cross_validation(database,algorithm,fold_num):
-	db = mongo_client[database]
-	pass
+    params = parse_params(request.params)
+    if params.has_key('json_data'):
+        json_data_s = params['json_data']
+    else:
+        json_data_s = {}
+    db = mongo_client[database]
+    result = my_classifier.cross_validation(db,json_data_s,feature_type,algorithm)
+    pass
 
 
 if app.config['myapp.env']=='development':
-	print 'run in development mode'
-	run(app, host='localhost', port=8080,debug=True, reloader=True)
+         print 'run in development mode'
+         run(app, host='localhost', port=8080,debug=True, reloader=True)
 else:
-	print 'run in production mode'
-	run(app, host='localhost',port=8080)
+         print 'run in production mode'
+         run(app, host='localhost',port=8080)
