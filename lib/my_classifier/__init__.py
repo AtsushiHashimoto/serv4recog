@@ -110,8 +110,8 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     return error_json('Error: unknown operation %s.' % operation)
 
 
-# json_data format: {"selector":${SELECTOR},"option":#{OPTION},"folds":N} where N is a number of folds.
-def cross_validation(db, json_data_s, feature_type, algorithm=None):
+# json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
+def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
     print "function: cross_validation"
     print json_data_s
     data = json.loads(json_data_s)
@@ -128,15 +128,59 @@ def cross_validation(db, json_data_s, feature_type, algorithm=None):
     else:        
         data['option'] = {}
 
-    if not data.has_key('folds'):
-        return error_json('Error: "folds" in json_data is a necessary parameter.')
-    folds = int(data['folds'])
-    
+
+    cv_group_head = "__cross_validation"    
+    # disband all previously taged cross_validation_groups
+    for i in range(0,fold_num):
+        group_name = "%s_%02d" % (cv_group_head, i)
+        mongointerface.disband(db, feature_type, {'group': group_name})
+    mongointerface.disband(db, feature_type, {'group': cv_group_head})
+        
+    collections = db[feature_type]
+    samples = collections.find(data['selector'])
+
     # group samples into N groups randomly
-#    for i in range(0,folds):
-        
-        
+
+    samples_count = samples.count()
+    if samples_count == 0:
+        return error_json("ERROR: no samples are hit.")
+
+    group_assignment = []
+    group_num = float(samples_count)/fold_num
+    for i in range(0,fold_num):
+        group_assignment += ["%s_%s"%(cv_group_head, i)] * (int((i+1)*group_num) - int(i*group_num))
+    
+    random.shuffle(group_assignment)
+            
+            
     # grouping samples into N group
+    for i, s in enumerate(samples):
+        group_name = group_assignment[i]
+        groups = s['group']
+        if not group_name in groups:
+            groups = mongointerface.ensure_list(groups)
+            groups.append(group_name)
+            groups.append(cv_group_head)
+            _id = s['_id']
+            collections.update_one({"_id":_id},{"$set":{'group':groups}})
+
+    mod = __import__(algorithm+'.classifier', fromlist=['.'])
+
+    print 'train'
+    # train N classifiers
+    for i in range(0,fold_num):
+        exclude_group = "%s%s"%(cv_group_head, i)
+        _data = copy.deepcopy(data)
+        _data['selector'] = {'group':{'$not':{'$all':[exclude_group]},'$all':[cv_group_head]}}
+        _data['overwrite'] = True
+        _data['name'] = exclude_group
+        print _data
+        result = mod.train(db,feature_type,_data)
+        if result['status'] != 'success':
+            return result
+
+    # evaluate each group by trained classifiers    
+    evaluate_results = []
 
 # json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
 def leave_one_out(db, json_data_s, feature_type, algorithm):
