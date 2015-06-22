@@ -173,7 +173,7 @@ def band(db,feature_type,data):
             groups = ensure_list(groups)
             groups.append(group_name)
             _id = s['_id']
-            collections.update({"_id":_id},{"$set":{'group':groups}})
+            collections.update_one({"_id":_id},{"$set":{'group':groups}})
     result = my_classifier.success_json()
     result['event'] = {'_id':generate_event_id('band',feature_type,[group_name,json.dumps(selector)])}
     return result
