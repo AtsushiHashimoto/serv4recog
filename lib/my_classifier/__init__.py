@@ -57,8 +57,6 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
         # encode unicode to str.
         for key, val in data['option'].items():
             if type(val) is unicode:
-                print key
-                print val
                 data['option'][key] = val.encode('utf-8')
     else:        
         data['option'] = {}
@@ -115,10 +113,22 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     return error_json('Error: unknown operation %s.' % operation)
 
 
+def generate_group_name(header,i):
+    return "%s_%02d" % (header,i)
 # json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
+    
+def merge_confusion_matrix(mat1,mat2):
+    mat_new = []
+    for j, array1 in enumerate(mat1):
+        array2 = mat2[j]
+        mat_new.append([])
+        for i,val1 in enumerate(array1):
+            val2 = array2[i]
+            mat_new[j].append(val1+val2)
+    return mat_new
+
 def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
     print "function: cross_validation"
-    print json_data_s
     data = json.loads(json_data_s)
     
     if not data.has_key('selector'):
@@ -127,8 +137,6 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
         # encode unicode to str.
         for key, val in data['option'].items():
             if type(val) is unicode:
-                print key
-                print val
                 data['option'][key] = val.encode('utf-8')            
     else:        
         data['option'] = {}
@@ -137,12 +145,14 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
     cv_group_head = "__cross_validation"    
     # disband all previously taged cross_validation_groups
     for i in range(0,fold_num):
-        group_name = "%s_%02d" % (cv_group_head, i)
+        group_name = generate_group_name(cv_group_head, i)
         mongointerface.disband(db, feature_type, {'group': group_name})
     mongointerface.disband(db, feature_type, {'group': cv_group_head})
         
     collections = db[feature_type]
-    samples = collections.find(data['selector'])
+    selector = data['selector']
+    data['selector']['ground_truth'] = {"$exists": True}
+    samples = collections.find(selector)
 
     # group samples into N groups randomly
 
@@ -151,16 +161,22 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
         return error_json("ERROR: no samples are hit.")
 
     group_assignment = []
-    group_num = float(samples_count)/fold_num
+    remainder = samples_count % fold_num
+    quotient = int(samples_count / fold_num)
     for i in range(0,fold_num):
-        group_assignment += ["%s_%s"%(cv_group_head, i)] * (int((i+1)*group_num) - int(i*group_num))
-    
+        n = quotient
+        if i < remainder:
+            n = n+1
+        print "group_count[%02d] = %d" % (i,n)
+        group_assignment += [generate_group_name(cv_group_head, i)] * n
     random.shuffle(group_assignment)
-            
-            
+                
     # grouping samples into N group
-    for i, s in enumerate(samples):
+    for i in range(samples_count):
+        s = samples[i]
         group_name = group_assignment[i]
+        #print group_name
+
         groups = s['group']
         if not group_name in groups:
             groups = mongointerface.ensure_list(groups)
@@ -171,21 +187,47 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
 
     mod = __import__(algorithm+'.classifier', fromlist=['.'])
 
-    print 'train'
-    # train N classifiers
+    #print 'train and evaluation'
+    # evaluate each group by trained classifiers    
+    confusion_matrices = []
+    # train, predict, and evaluate N classifiers
     for i in range(0,fold_num):
-        exclude_group = "%s%s"%(cv_group_head, i)
+        ## train ##
+        exclude_group = generate_group_name(cv_group_head, i)
+        #print exclude_group
         _data = copy.deepcopy(data)
-        _data['selector'] = {'group':{'$not':{'$all':[exclude_group]},'$all':[cv_group_head]}}
+        _data['selector'] = {'group':{'$not':{'$all':[exclude_group]},'$all':[cv_group_head]},'ground_truth':{"$exists": True}}
         _data['overwrite'] = True
         _data['name'] = exclude_group
-        print _data
+        #print _data
         result = mod.train(db,feature_type,_data)
         if result['status'] != 'success':
             return result
-
-    # evaluate each group by trained classifiers    
-    evaluate_results = []
+            
+        ## predict ##
+        selector = {'group':{'$all':[exclude_group]}}        
+        group_samples = mongointerface.get_training_samples(db,feature_type,False,selector)
+        for s in group_samples:
+            result = mod.predict(db,feature_type, Sample(s), _data)
+            if result['status'] != 'success':
+                return result
+        _data['selector'] = selector
+        result = mongointerface.evaluate(db, feature_type, _data, algorithm)
+        if result['status'] != 'success':
+            return result
+        confusion_matrices.append(result['confusion_matrix'])
+    
+    cmat = None
+    for m in confusion_matrices:
+        if bool(cmat):
+            cmat = merge_confusion_matrix(cmat,json.loads(m))
+        else:
+            cmat = json.loads(m)
+    result = success_json()
+    result['confusion_matrix'] = cmat
+    cls_id = generate_clf_id(algorithm,feature_type,data)
+    result['event'] = {'_id':"cross_validation::" + cls_id}
+    return result
 
 # json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
 def leave_one_out(db, json_data_s, feature_type, algorithm):
@@ -208,7 +250,11 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
     leave_one_out_clf_name = "__leave_one_out"    
             
     collections = db[feature_type]
-    samples = collections.find(data['selector'])
+    selector = data['selector']
+    data['selector']['ground_truth'] = {"$exists": True}
+    samples = collections.find(selector)
+
+    mod = __import__(algorithm+'.classifier', fromlist=['.'])
 
     for s in samples:
         _data = copy.deepcopy(data)
@@ -280,12 +326,12 @@ def train_deco(algorithm):
             class_map = {}
             class_weight = {}
             for i,cls in enumerate(class_list):
-                print i
-                print cls
+                #print i
+                #print cls
                 class_map[cls] = i
                 class_weight[i] = float(len(class_list) * (samples.count() - class_count[cls])) / float(samples.count())
                     
-            print class_map
+            #print class_map
             for i in range(len(y)):
                 
                 y[i] = class_map[y[i]]
@@ -323,7 +369,7 @@ def predict_deco(algorithm):
         def wrapper(db,feature_type, sample, data):
             # サンプルのグループを取ってくるだけ
             # Sample … (ft,_id,type,cls,group,likelihood,weight)
-            print "function: predict"
+            #print "function: predict"
             
             clf_id = generate_clf_id(algorithm,feature_type,data) 
 
@@ -336,9 +382,7 @@ def predict_deco(algorithm):
                     return error_json("No classifier was found.")
                 clf = pickle.loads(record['clf'])
             except:
-                
                 return error_json(sys.exc_info()[1])
-            
 
             # algorithmに応じた処理(func)を行う
             likelihood_list = func(clf,sample)
@@ -351,11 +395,16 @@ def predict_deco(algorithm):
                         
             # 予測結果をデータベースへ追加
             sample.likelihood[clf_id] = likelihood_dict
-            
-            add_result = mongointerface.add(db,feature_type,sample)
+
+            collections = db[feature_type]
+            if collections.find_one(sample._id):
+                collections.update_one({"_id":sample._id},{"$set":{'likelihood':sample.likelihood}})
+                sub_result = {'update::%s'%sample._id}
+            else:
+                sub_result = mongointerface.add(db,feature_type,sample)
             
             result = success_json()
-            result['event'] = {'_id':"predict::"+clf_id+"::"+str(sample._id), 'sub_event':add_result}
+            result['event'] = {'_id':"predict::"+clf_id+"::"+str(sample._id), 'sub_event':sub_result}
             result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
             
             return result 
