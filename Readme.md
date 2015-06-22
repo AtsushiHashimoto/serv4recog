@@ -75,8 +75,8 @@ sample has following parameters.
  - _ex) "feature":[0.1,0.9,0.3,0.7,0.5,0.5]_
 - id: sample ID
  - _ex) "id":"sample00001"_
-- class: teacher signal for this sample. (optional, but required as training sample.)
- - _ex) "class": "class001"_
+- ground_truth: teacher signal for this sample. (optional, but required as training sample.)
+ - _ex) "ground_truth": "class001"_
 - likelihood: recognition results (only in output)
  - _ex) "likelihood:{"svc::${SELECTOR}":{"class001":0.9, "class002":0.1}}_
 - group: group tag that is used in ${SELECTOR}
@@ -87,8 +87,8 @@ Selector limits samples involved in the calculation.
 
 - id: limit samples by its ID.
  - _ex) {"$or":[{"id":"sample00001"},{"id":"sample00002"}]}_
-- class: limit samples by its class
- - _ex) {"$or":[{"cls":"class001"},{"cls":"class002"}]}_
+- ground_truth: limit samples by its class
+ - _ex) {"$or":[{"ground_truth":"class001"},{"ground_truth":"class002"}]}_
 - group: limit samples by its group
  - _ex) {"group":{"$all":["group01"]}}"_
 
