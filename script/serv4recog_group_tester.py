@@ -78,7 +78,7 @@ if __name__ == '__main__':
     feature_type = 'test_dim%03d' % feature_dim
 
     # ここでalgorithm(ディレクトリ名)を指定する
-    algorithm = 'svm_rbf'
+    algorithm = 'svc'
 
     # groupを指定するテスト 
     target_groups = ['target_group1','target_group2']
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     
     params = {'json_data':json.dumps({'selector':{'group':{"$all":target_groups}}})}
     try:
-        response = conn.request('POST',url_path2 + operation, params)
+        response = conn.request('POST',url_path1 + operation, params)
     except:
         for message in sys.exc_info():
             print message
