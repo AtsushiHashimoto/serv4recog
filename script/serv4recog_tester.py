@@ -114,7 +114,7 @@ if __name__ == '__main__':
     print operation
 
     for i, (_y, _x) in enumerate(zip(y,x)):
-        sample = {'id':i, 'class': _y, 'feature': _x}
+        sample = {'id':i, 'ground_truth': _y, 'feature': _x}
         print sample
         try:
             response = conn.request('POST',url_path1 + operation, {'json_data': json.dumps(sample)})
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         
         
         feature = generate_sample(cores['ave'][class_id],cores['sigma'][class_id])
-        sample = {'id':offset+i, 'class': class_name, 'feature': feature}
+        sample = {'id':offset+i, 'ground_truth': class_name, 'feature': feature}
         
         # classifierの指定をする
         sample['option'] = option

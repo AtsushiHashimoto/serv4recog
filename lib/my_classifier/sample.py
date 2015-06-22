@@ -11,14 +11,13 @@ def ensure_list(elem):
 
 
             
-class Sample:
-            
+class Sample:            
         def __init__(self, json_data):
 		self.ft = json_data['feature']
 		if json_data.has_key('id'):
 			self._id = json_data['id']
-		if json_data.has_key('class'):
-			self.cls = json_data['class']
+		if json_data.has_key('ground_truth'):
+			self.ground_truth = json_data['ground_truth']
 		if json_data.has_key('group'):
 			self.group = ensure_list(json_data['group'])
 		else:

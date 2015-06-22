@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
     
     for i, (_y, _x) in enumerate(zip(y,x)):
-        sample = {'id':i, 'class': _y, 'feature': _x, 'group': target_groups}
+        sample = {'id':i, 'ground_truth': _y, 'feature': _x, 'group': target_groups}
         if i % 4 == 0:
             sample['group'] = [target_groups[0]] + exception_groups
         elif i % 2 == 0:
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         
         
         feature = generate_sample(cores['ave'][class_id],cores['sigma'][class_id])
-        sample = {'id':offset+i, 'class': class_name, 'feature': feature, 'selector':selector}        
+        sample = {'id':offset+i, 'ground_truth': class_name, 'feature': feature, 'selector':selector}        
         
         try:
             response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps(sample)})

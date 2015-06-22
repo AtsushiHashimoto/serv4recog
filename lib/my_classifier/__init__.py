@@ -265,8 +265,8 @@ def train_deco(algorithm):
 
             for i,s in enumerate(samples):
                 x[i] = s['ft']
-                y[i] = s['cls']
-                class_count[s['cls']] += 1
+                y[i] = s['ground_truth']
+                class_count[s['ground_truth']] += 1
 
             class_list = sorted(class_count.keys())
 

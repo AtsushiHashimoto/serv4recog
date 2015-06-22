@@ -75,7 +75,7 @@ def sample_treater(func):
 def get_training_samples(db,feature_type, clustering = False, selector={}):
     query = selector
     if not clustering:
-        query['cls'] = {"$exists": True}
+        query['ground_truth'] = {"$exists": True}
     return db[feature_type].find(query)
 
 
@@ -228,9 +228,10 @@ def evaluate(db,feature_type, data,algorithm):
         
     samples = db[feature_type].find({'likelihood.'+clf_id : {"$exists":True}})
     for s in samples:
+        print s
         if not s['likelihood'].has_key(clf_id):
             continue
-        y.append(name2id[s['cls']])
+        y.append(name2id[s['ground_truth']])
         likelihood = dict(s['likelihood'][clf_id])
         pred_name = max([(v,k) for k,v in likelihood.items()])[1]
         y_pred.append(name2id[pred_name])
@@ -267,7 +268,7 @@ def evaluate(db,feature_type, data,algorithm):
 if __name__ == '__main__':
 
     def create_test_sample():
-        data = {'feature':[0,0,0], 'id':'test_sample', 'feature_type':'test_dim003', 'class':0}
+        data = {'feature':[0,0,0], 'id':'test_sample', 'feature_type':'test_dim003', 'ground_truth':0}
         return my_classifier.Sample.Sample(data)
     
     mongo_client = MongoClient()
