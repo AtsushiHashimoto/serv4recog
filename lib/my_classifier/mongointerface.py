@@ -112,8 +112,7 @@ def clear_classifier(db, feature_type, data, algorithm):
         return my_classifier.error_json('algorithm must be designated')
 
 
-    selector = data["selector"]
-    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
+    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,data)
     query = {'_id':clf_id}
     
     collection = db['classifiers']
@@ -187,12 +186,9 @@ def group(db,feature_type,data):
 @access_history_log
 def evaluate(db,feature_type, data,algorithm):
     print "function: evaluate"
-    
-    selector = data['selector']
-
-    
+        
     # class_name2idのために識別器のデータを呼ぶ
-    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,selector)
+    clf_id = my_classifier.generate_clf_id(algorithm,feature_type,data)
     print "clf_id: " + clf_id
     print ""
     try:
@@ -224,7 +220,7 @@ def evaluate(db,feature_type, data,algorithm):
 
     result = my_classifier.success_json()
 
-    result['event'] = {'_id':generate_event_id('evaluate', feature_type, selector)}
+    result['event'] = {'_id':generate_event_id('evaluate', feature_type, clf_id)}
 
     id2name = record['class_id2name']
     result['class_list'] = [id2name[k] for k in sorted(id2name.keys())]

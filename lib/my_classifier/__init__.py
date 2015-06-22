@@ -48,6 +48,16 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     
     if not data.has_key('selector'):
         data['selector'] = {}
+    if data.has_key('option'):
+        # encode unicode to str.
+        for key, val in data['option'].items():
+            if type(val) is unicode:
+                print key
+                print val
+                data['option'][key] = val.encode('utf-8')
+            
+    else:        
+        data['option'] = {}
         
     # train, predict, testではalgorithmに対応するモジュールをimportする
     if operation in {'train','predict','test'}:
@@ -91,20 +101,25 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 
 # predict
         elif operation == 'predict':
-            return mod.__dict__[operation](db, feature_type, sample, data['selector'])
-            
+            return mod.__dict__[operation](db, feature_type, sample, data)
+                        
 # unknown operations (error)
     return error_json('Error: unknown operation %s.' % operation)
 
 
 # generate classifier's ID
-def generate_clf_id(alg,feature_type,selector):
+def generate_clf_id(alg,feature_type,data):
     id = feature_type + "::" + alg
-    if bool(selector):
-        print "generate_clf_id"
-        print selector
-        print json.dumps(selector)
-        id = id + "::" + json.dumps(selector)
+    if data.has_key('name') and (type(data['name']) is str):
+        id = id + "::" + data['name']
+    else:
+        if bool(data['selector']):
+#           print "generate_clf_id"
+#           print selector
+#           print json.dumps(selector)
+            id = id + "::" + json.dumps(data['selector'])
+        if bool(data['option']):
+            id = id + "::" + json.dumps(data['option'])
     return id
     
 
@@ -116,11 +131,11 @@ def train_deco(algorithm):
         @functools.wraps(func)
         def wrapper(db,feature_type, data):
             # 訓練に使うサンプルのqueryを作る
-            selector = {}
-            if data.has_key('selector'):
-                selector = data['selector']
-            
-            cls_id = generate_clf_id(algorithm,feature_type,selector)
+            selector = data['selector']
+            option = data['option']
+
+            cls_id = generate_clf_id(algorithm,feature_type,data)
+                
             prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
             if data.has_key("overwrite") and data["overwrite"]=="true":
@@ -163,7 +178,7 @@ def train_deco(algorithm):
 
 
             # algorithmに応じた処理(func)を行う
-            clf=func(x,y,class_weight)
+            clf=func(x,y,class_weight,option)
 
 
             # 結果を保存
@@ -191,13 +206,12 @@ def train_deco(algorithm):
 def predict_deco(algorithm):
     def recieve_func(func):
         @functools.wraps(func)
-        def wrapper(db,feature_type, sample, selector):
+        def wrapper(db,feature_type, sample, data):
             # サンプルのグループを取ってくるだけ
             # Sample … (ft,_id,type,cls,group,likelihood,weight)
             print "function: predict"
             
-            ## algorithmに依存する部分
-            clf_id = generate_clf_id(algorithm,feature_type,selector)
+            clf_id = generate_clf_id(algorithm,feature_type,data) 
 
             # 予測部
             collection = db["classifiers"]            
@@ -220,9 +234,6 @@ def predict_deco(algorithm):
                 key = record['class_id2name'][str(i)]
                 likelihood_dict[key] = l
 
-
-            ## algorithmに依存する部分
-            clf_id = generate_clf_id(algorithm,feature_type,selector)
                         
             # 予測結果をデータベースへ追加
             sample.likelihood[clf_id] = likelihood_dict
