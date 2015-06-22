@@ -67,23 +67,30 @@ def route_sample_treatment(database,feature_type,operation):
 
 
 
-#         one-out-leave
-@app.get('/ml/<database>/<feature_type>/<algorithm>/one-out-leave/<data_id>')
-def get_one_out_leave(database,algorithm,data_id):
-	db = mongo_client[database]
-	pass
+# leave-one-out
+@app.get('/leave_one_out/<database>/<feature_type>/<algorithm>')
+def get_one_out_leave(database,feature_type,algorithm):
+    params = parse_params(request.params)
+    if params.has_key('json_data'):
+        json_data_s = params['json_data']
+    else:
+        json_data_s = {}
+    db = mongo_client[database] 
+    result = my_classifier.leave_one_out(db,json_data_s,feature_type,algorithm)
+    return json.dumps(result,default=json_util.default)
+
 
 # cross-validation
-@app.get('/ml/<database>/<feature_type>/<algorithm>/cross-validation/<fold_num:int>')
-def get_cross_validation(database,algorithm,fold_num):
+@app.get('/cross_validation/<database>/<feature_type>/<algorithm>/<fold_num:int>')
+def get_cross_validation(database,feature_type,algorithm,fold_num):
     params = parse_params(request.params)
     if params.has_key('json_data'):
         json_data_s = params['json_data']
     else:
         json_data_s = {}
     db = mongo_client[database]
-    result = my_classifier.cross_validation(db,json_data_s,feature_type,algorithm)
-    pass
+    result = my_classifier.cross_validation(db,json_data_s,feature_type,algorithm,fold_num)
+    return json.dumps(result,default=json_util.default)
 
 
 if app.config['myapp.env']=='development':
