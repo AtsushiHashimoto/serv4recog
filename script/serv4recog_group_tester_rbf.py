@@ -158,9 +158,6 @@ if __name__ == '__main__':
     operation = 'train'
     print operation
 
-    multi = True
-    force = False
-
     # order: 学習させる際のオプション 
     response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'selector':selector})})
     result = json.loads(response.data)
