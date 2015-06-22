@@ -55,7 +55,6 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
                 print key
                 print val
                 data['option'][key] = val.encode('utf-8')
-            
     else:        
         data['option'] = {}
         
@@ -75,9 +74,13 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     elif operation=='clear_samples':
         return mongointerface.clear_samples(db, feature_type, data)
 
-# group
-    elif operation=='group':
-        return mongointerface.group(db, feature_type, data)
+# band
+    elif operation=='band':
+        return mongointerface.band(db, feature_type, data)
+
+# disband
+    elif operation=='disband':
+        return mongointerface.disband(db, feature_type, data)
 
 # evaluate
     elif operation=='evaluate':
@@ -105,6 +108,35 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
                         
 # unknown operations (error)
     return error_json('Error: unknown operation %s.' % operation)
+
+
+# json_data format: {"selector":${SELECTOR},"option":#{OPTION},"folds":N} where N is a number of folds.
+def cross_validation(db, json_data_s, feature_type, algorithm=None):
+    print "function: cross_validation"
+    print json_data_s
+    data = json.loads(json_data_s)
+    
+    if not data.has_key('selector'):
+        data['selector'] = {}
+    if data.has_key('option'):
+        # encode unicode to str.
+        for key, val in data['option'].items():
+            if type(val) is unicode:
+                print key
+                print val
+                data['option'][key] = val.encode('utf-8')            
+    else:        
+        data['option'] = {}
+
+    if not data.has_key('folds'):
+        return error_json('Error: "folds" in json_data is a necessary parameter.')
+    folds = int(data['folds'])
+    
+    # group samples into N groups randomly
+#    for i in range(0,folds):
+        
+        
+    # grouping samples into N group
 
 
 # generate classifier's ID
