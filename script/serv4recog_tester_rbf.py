@@ -74,7 +74,9 @@ if __name__ == '__main__':
     
     database = 'test'
     feature_type = 'test_dim%03d' % feature_dim
-    algorithm = 'svm_rbf'
+
+    # use SVC in scikit-learn SVM library
+    algorithm = 'svc'
 
     url_path1 = "/ml/%s/%s/" % (database,feature_type)
     url_path2 = "%s%s/" % (url_path1,algorithm)
@@ -132,10 +134,14 @@ if __name__ == '__main__':
 
     multi = True
     force = False
+    
+    # option for training classifier.(For the detail of possible parameters, refer scikit-learn SVC)
+    # http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC
+    option = {'kernel':'rbf','max_iter':10} # optional
 
     # order: 学習させる際のオプション 
     # order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)
-    response = conn.request('POST',url_path2 + operation)
+    response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps({'option':option})})
     result = json.loads(response.data)
     print "result: " + json.dumps(result)
 
@@ -156,6 +162,9 @@ if __name__ == '__main__':
         feature = generate_sample(cores['ave'][class_id],cores['sigma'][class_id])
         sample = {'id':offset+i, 'class': class_name, 'feature': feature}
         
+        # classifierの指定をする
+        sample['option'] = option
+        
         try:
             response = conn.request('POST',url_path2 + operation, {'json_data':json.dumps(sample)})
         except:
@@ -170,7 +179,8 @@ if __name__ == '__main__':
 
     # 識別結果の精度を問い合わせる
     operation = 'evaluate'
-    response = conn.request('POST', url_path2 + operation)
+    
+    response = conn.request('POST', url_path2 + operation,{'json_data':json.dumps({'option':option})})
     result = json.loads(response.data)
     print "class_list: %s"% " ".join(result['class_list'])
     for key,val in result.items():
