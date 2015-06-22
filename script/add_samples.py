@@ -38,13 +38,13 @@ if __name__ == '__main__':
   # ディレクトリ構成例)
 	# tar_dir
 	# ├── group01
-	# │   ├── groups.dat
-	# │   ├── group01_01
-	# │   │   └── class00X
-	# │   │       ├── groups.dat
-	# │   │       ├── sample00001.png
-	# │   │       └── featureA-sample00002.dat
-	# │   └── group01_02
+	# │   ├── groups.dat
+	# │   ├── group01_01
+	# │   │   └── class00X
+	# │   │       ├── groups.dat
+	# │   │       ├── sample00001.png
+	# │   │       └── featureA-sample00002.dat
+	# │   └── group01_02
 	# └── group02
 
 	# sample0001.pngに対する処理
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 	#			0.5
 	#
 	# 2. featureA-sample00001.datの内容をサーバに投げる
-	#		 http://localhost:8080/ml/test_db/svm_rbf/add?{"feature":[0.1,0.9,0.3,0.7,0.5,0.5],"id":"sample00001","class":"class00X","group":["group01","group01_01"]}
+	#		 http://localhost:8080/ml/test_db/svm_rbf/add?{"feature":[0.1,0.9,0.3,0.7,0.5,0.5],"id":"sample00001","ground_truth":"class00X","group":["group01","group01_01"]}
 
 	def send_sample(conn,file,groups):
 		path, ext = os.path.splitext(file)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 		if m == None:
 			if not args.feature_extractor:
 				print "ERROR: no feature extractor was designated."
-				exit()
+				sys.exit()
 			dat_file = "%s_%s.dat" % (path,args.feature_name)
 			if os.path.exists(dat_file):
 				return
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 		class_name = groups[-1]
 		id = class_name + "_" + os.path.basename(m.group(1))
 
-		json_data = json.dumps({"feature_type":args.feature_name,"id":id,"class":class_name,"group":groups[0:-1],"feature":feature})
+		json_data = json.dumps({"feature_type":args.feature_name,"id":id,"ground_truth":class_name,"group":groups[0:-1],"feature":feature})
 		print json_data
 		response = conn.request('POST',url_path,{"json_data":json_data})
 				#		response = session.post(url, params={"json_data":json_data})
