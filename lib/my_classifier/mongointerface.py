@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_
 
 from my_classifier.sample import ensure_list
 
-import copy
+#import copy
 
 ################################################
 ### query maker
@@ -211,8 +211,7 @@ def evaluate(db,feature_type, data,algorithm):
         
     # class_name2idのために識別器のデータを呼ぶ
     clf_id = my_classifier.generate_clf_id(algorithm,feature_type,data)
-    print "clf_id: " + clf_id
-    print ""
+    # print "clf_id: " + clf_id
     try:
         record = db["classifiers"].find_one({'_id':clf_id})
         if record == None:

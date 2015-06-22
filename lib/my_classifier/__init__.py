@@ -9,6 +9,11 @@ import functools
 import pickle
 import collections
 
+# for cross_validation
+import random
+
+import copy
+
 ################################################
 ### result dict. 
 ################################################
