@@ -56,21 +56,19 @@ Congratulation!!
 ## Add sample
 HTTP GET:
 
-    http://localhost:8080/ml/my_db/my_feature/add?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/my_feature/add?json_data=${SAMPLE}
 
 HTTP POST:
  
     http://localhost:8080/ml/my_db/my_feature/add
-    
-
-- json_data=$SAMPLE-IN-JSON-FORMAT
+- json_data: parameters dumped as a json-format string. 
 - ml      : fixed path name (you can not change).
 - my_db   : name of database. You can use different name for each of your application.
 - my_feature : name of feature_type. You can use any string for each type of feature vector. (e.g. rgb_histogram, hu_moment, SIFT, et al.)
 
 - CAUTION: In your custome applications, '{' and ':' in URL string should be url-encoded!! Please check specification of the HTTP library used in your application.
 
-### ${SAMPLE-IN-JSON-FORMAT}
+### ${SAMPLE}
 sample has following parameters.
 
 - feature: float array that contains feature vector
@@ -80,12 +78,13 @@ sample has following parameters.
 - class: teacher signal for this sample. (optional, but required as training sample.)
  - _ex) "class": "class001"_
 - likelihood: recognition results (only in output)
- - _ex) "likelihood:{"svm_rbf::${SELECTOR}":{"class001":0.9, "class002":0.1}}_
+ - _ex) "likelihood:{"svc::${SELECTOR}":{"class001":0.9, "class002":0.1}}_
 - group: group tag that is used in ${SELECTOR}
  - _ex) "group":["group01","test_samples"]_
 
 ### ${SELECTOR}
 Selector limits samples involved in the calculation.
+
 - id: limit samples by its ID.
  - _ex) {"$or":[{"id":"sample00001"},{"id":"sample00002"}]}_
 - class: limit samples by its class
@@ -98,24 +97,37 @@ The format follows to pymongo. For more detail, please see online documentation
 
 
 ## Train
-    http://localhost:8080/ml/my_db/my_feature/svm_rbf/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}
-- svm_rbf : name of classifier. currently, svm_rbf and svm_linear are supported.
+    http://localhost:8080/ml/my_db/my_feature/svc/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}, ${CLASSIFIER-PARAMS}}
+- svc: name of classifier. currently, only svc is supported.
 - overwrite: overwrite previously trained classifier if true (optional)
+
+### ${CLASSIFIER-PARAMS}
+${CLASSIFIER-PARAMS} has following parameters.
+
+- selector: limit training samples. (optional)
+- option: argument used in classifier training. (optional)
+    http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
+- name: Name of trained classifier data. This is used to identified trained classifier at prediction. (optional)
 
 ### ${BOOL}
 true or false
 
+### ${OPTION}
+A hash identifying argment name and its value for training. For SVC, refer scikit-learn SVC
+page
+    http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
+
 ## Predict
-    http://localhost:8080/ml/my_db/my_feature/svm_rbf/predict?json_data=${SAMPLE-IN-JSON-FORMAT}
+    http://localhost:8080/ml/my_db/my_feature/svc/predict?json_data={${SAMPLE}, ${CLASSIFIER-PARAMS}}
 
 ## Evaluate
-    http://localhost:8080/ml/my_db/my_feature/svm_rbf/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/my_feature/svc/evaluate?json_data=${CLASSIFIER-PARAMS}
 
 ## Clear Samples
-    http://localhost:8080/ml/my_db/my_feature/clear_samples?json_data={"feature_type":$FeatureType}
+    http://localhost:8080/ml/my_db/my_feature/clear_samples?json_data={"selector":${SELECTOR}}
 
 ## Clear Classifier
-    http://localhost:8080/ml/my_db/my_feature/classifier/evaluate?json_data=$CLASSIFIER-IN-JSON-FORMAT
+    http://localhost:8080/ml/my_db/my_feature/classifier/evaluate?json_data=$CLASSIFIER-PARAMS
 
 ## Group
     http://localhost:8080/ml/my_db/my_feature/group?json_data={"selector":${SELECTOR}, "group":["selected_samples01"]}
