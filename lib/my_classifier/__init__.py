@@ -170,7 +170,7 @@ def train_deco(algorithm):
                 
             prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
-            if data.has_key("overwrite") and data["overwrite"]=="true":
+            if data.has_key("overwrite") and data["overwrite"] in ["true",1,True,"True","TRUE"]:
                 overwrite = True
 
             if prev_clf.count()>0 and not overwrite:
