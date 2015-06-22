@@ -138,6 +138,39 @@ def cross_validation(db, json_data_s, feature_type, algorithm=None):
         
     # grouping samples into N group
 
+# json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
+def leave_one_out(db, json_data_s, feature_type, algorithm):
+    print "function: leave_one_out"
+    print json_data_s
+    data = json.loads(json_data_s)
+    
+    if not data.has_key('selector'):
+        data['selector'] = {}
+    if data.has_key('option'):
+        # encode unicode to str.
+        for key, val in data['option'].items():
+            if type(val) is unicode:
+                print key
+                print val
+                data['option'][key] = val.encode('utf-8')            
+    else:        
+        data['option'] = {}
+        
+    leave_one_out_clf_name = "__leave_one_out"    
+            
+    collections = db[feature_type]
+    samples = collections.find(data['selector'])
+
+    for s in samples:
+        _data = copy.deepcopy(data)
+        _data['selector'] = {'_id':{'$ne':s['_id']}}
+        _data['overwrite'] = True
+        _data['name'] = leave_one_out_clf_name
+        print _data
+        result = mod.train(db,feature_type,_data)
+        if result['status'] != 'success':
+            return result
+    
 
 # generate classifier's ID
 def generate_clf_id(alg,feature_type,data):
