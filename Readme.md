@@ -97,18 +97,20 @@ The format follows to pymongo. For more detail, please see online documentation
 
 
 ## Train
-    http://localhost:8080/ml/my_db/my_feature/svc/train?json_data={"selector":${SELECTOR}, "overwrite":${BOOL}, ${CLASSIFIER-PARAMS}}
+    http://localhost:8080/ml/my_db/my_feature/svc/train?json_data={"overwrite":${BOOL}, ${CLASSIFIER-PARAMS}}
 - svc: name of classifier. currently, only svc is supported.
 - overwrite: overwrite previously trained classifier if true (optional)
 
 ### ${CLASSIFIER-PARAMS}
 ${CLASSIFIER-PARAMS} has following parameters.
 
-- selector: limit training samples. (optional)
+- selector: limits training samples. (optional)
+ - _ex) "selector":${SELECTOR}_
 - option: argument used in classifier training. (optional)
     http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
-- name: Name of trained classifier data. This is used to identified trained classifier at prediction. (optional)
-
+ - _ex) "option":${OPTION}_
+- name: Name of trained classifier data. This is used to identified trained classifier at prediction. If name is set, "selector" and "option" are ignored to search the corresponding classifier. (optional)
+ - _ex) "name":"classifier20150622"
 ### ${BOOL}
 true or false
 
