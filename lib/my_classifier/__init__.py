@@ -39,8 +39,17 @@ def check_sample_source(data):
         return error_json("sample must contain '%s'"%key)
     return success_json()
 
-
-
+def init_data(data):
+    if not data.has_key('selector'):
+        data['selector'] = {}
+    if data.has_key('option'):
+        # encode unicode to str.
+        for key, val in data['option'].items():
+            if type(val) is unicode:
+                data['option'][key] = val.encode('utf-8')
+    else:        
+        data['option'] = {}
+    
 #############################################
 # MAIN FUNCTiON
 #############################################
@@ -51,16 +60,8 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
     print json_data_s
     data = json.loads(json_data_s)
     
-    if not data.has_key('selector'):
-        data['selector'] = {}
-    if data.has_key('option'):
-        # encode unicode to str.
-        for key, val in data['option'].items():
-            if type(val) is unicode:
-                data['option'][key] = val.encode('utf-8')
-    else:        
-        data['option'] = {}
-        
+    init_data(data)
+            
     # train, predict, testではalgorithmに対応するモジュールをimportする
     if operation in {'train','predict','test'}:
         mod = __import__(algorithm+'.classifier', fromlist=['.'])
@@ -130,17 +131,7 @@ def merge_confusion_matrix(mat1,mat2):
 def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
     print "function: cross_validation"
     data = json.loads(json_data_s)
-    
-    if not data.has_key('selector'):
-        data['selector'] = {}
-    if data.has_key('option'):
-        # encode unicode to str.
-        for key, val in data['option'].items():
-            if type(val) is unicode:
-                data['option'][key] = val.encode('utf-8')            
-    else:        
-        data['option'] = {}
-
+    init_data(data)
 
     cv_group_head = "__cross_validation"    
     # disband all previously taged cross_validation_groups
@@ -212,6 +203,8 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
             if result['status'] != 'success':
                 return result
         _data['selector'] = selector
+        ## evaluate ##
+
         result = mongointerface.evaluate(db, feature_type, _data, algorithm)
         if result['status'] != 'success':
             return result
@@ -234,21 +227,11 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
     print "function: leave_one_out"
     print json_data_s
     data = json.loads(json_data_s)
-    
-    if not data.has_key('selector'):
-        data['selector'] = {}
-    if data.has_key('option'):
-        # encode unicode to str.
-        for key, val in data['option'].items():
-            if type(val) is unicode:
-                print key
-                print val
-                data['option'][key] = val.encode('utf-8')            
-    else:        
-        data['option'] = {}
+    init_data(data)
         
     leave_one_out_clf_name = "__leave_one_out"    
-            
+    data['name'] = leave_one_out_clf_name
+    
     collections = db[feature_type]
     selector = data['selector']
     data['selector']['ground_truth'] = {"$exists": True}
@@ -257,15 +240,33 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
     mod = __import__(algorithm+'.classifier', fromlist=['.'])
 
     for s in samples:
+        ## train ##
+        print s
         _data = copy.deepcopy(data)
         _data['selector'] = {'_id':{'$ne':s['_id']}}
         _data['overwrite'] = True
         _data['name'] = leave_one_out_clf_name
-        print _data
+        # print _data
+        print "train"
         result = mod.train(db,feature_type,_data)
         if result['status'] != 'success':
             return result
+        print "predict"
+        ## predict ##
+        result = mod.predict(db,feature_type, Sample(s), _data)
+        if result['status'] != 'success':
+            return result
+
     
+    print "evaluate"
+    ## evaluate ##
+    result = mongointerface.evaluate(db, feature_type, data, algorithm)
+    if result['status'] != 'success':
+        return result
+    cls_id = generate_clf_id(algorithm,feature_type,data)
+    result['event'] = {'_id':"leave_one_out::" + cls_id}
+    return result
+
 
 # generate classifier's ID
 def generate_clf_id(alg,feature_type,data):
