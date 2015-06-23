@@ -264,9 +264,9 @@ def evaluate(db,feature_type, data,algorithm):
     #print precision_score(y,y_pred,sample_weight=weights)
     #print precision_score(y,y_pred)
     #print weights
-    result['precision_score'] = precision_score(y,y_pred,average=None)#,sample_weight=weights)
-    result['recall_score'] = recall_score(y,y_pred,average=None)#,sample_weight=weights)
-    result['f1_score'] = f1_score(y,y_pred,average=None)#,sample_weight=weights)
+    result['precision_score'] = precision_score(y,y_pred,average=None).tolist()#,sample_weight=weights)
+    result['recall_score'] = recall_score(y,y_pred,average=None).tolist()#,sample_weight=weights)
+    result['f1_score'] = f1_score(y,y_pred,average=None).tolist()#,sample_weight=weights)
     return result
 
 if __name__ == '__main__':
