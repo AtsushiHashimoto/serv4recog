@@ -68,7 +68,7 @@ def route_sample_treatment(database,feature_type,operation):
 
 
 # leave-one-out
-@app.get('/leave_one_out/<database>/<feature_type>/<algorithm>')
+@app.get('/leave_one_out/<database>/<feature_type>/<algorithm>/')
 def get_one_out_leave(database,feature_type,algorithm):
     params = parse_params(request.params)
     if params.has_key('json_data'):
