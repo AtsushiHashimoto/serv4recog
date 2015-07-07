@@ -275,7 +275,12 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
 # generate classifier's ID
 def generate_clf_id(alg,feature_type,data):
     id = feature_type + "::" + alg
-    if data.has_key('name') and (type(data['name']) is str):
+
+    typ = None
+    if data.has_key('name'):
+        typ = type(data['name'])
+    
+    if typ is str or typ is unicode:
         id = id + "::" + data['name']
     else:
         if bool(data['selector']):
@@ -299,12 +304,28 @@ def train_deco(algorithm):
         def wrapper(db,feature_type, data):
             # 訓練に使うサンプルのqueryを作る
             selector = data['selector']
-            option = data['option']
-            
+            # 学習用関数に渡すパラメタ
+            option = data['option']          
             # クラスのパターンが記述されていれば，それを使う
             class_remap = data['class_remap']
+            
+            # 処理前に入力内容を記録
+            record = {}
+            if bool(selector):
+                print "selector"
+                print selector
+                record['selector'] = copy.deepcopy(selector)
+            if bool(option):
+                print "option"
+                print option
+                record['option'] = copy.deepcopy(option)
+            if bool(class_remap):
+                record['class_remap'] = copy.deepcopy(class_remap)
+
 
             cls_id = generate_clf_id(algorithm,feature_type,data)
+            print type(data['name'])
+            print "classifier ID: %s"%cls_id
 
             prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
@@ -335,8 +356,6 @@ def train_deco(algorithm):
             if 1 >= sample_count:
                 return error_json('Only %d samples are hit as training samples.'%sample_count)
 
-            print len(samples)
-            print "samples_count = %d"%sample_count
             # shuffle??            
             x = [[]] * sample_count
             y = [0] * sample_count
@@ -349,7 +368,6 @@ def train_deco(algorithm):
 
 
             class_list = sorted(class_count.keys())
-
 
             # クラスの「重み付け」
             class_map = {}
@@ -372,7 +390,6 @@ def train_deco(algorithm):
 
             # 結果を保存
             ## algorithmに依存する部分
-            record = {}
             record['_id'] = cls_id
             event = {'_id':"train::" + record['_id']}
             
@@ -412,6 +429,16 @@ def predict_deco(algorithm):
                 clf = pickle.loads(record['clf'])
             except:
                 return error_json(sys.exc_info()[1])
+                
+            # selector等をチェックする
+            if record.has_key('selector'):
+                if data.has_key('selector') and record['selector'] != data['selector']:
+                    return error_json('selector does not match to the trained condition.')
+                if data.has_key('option') and record['option'] != data['option']:
+                    return error_json('option does not match to the trained condition.')
+                if data.has_key('class_remap') and record['class_remap'] != data['class_remap']:
+                    return error_json('option does not match to the trained condition.')
+                
 
             # algorithmに応じた処理(func)を行う
             likelihood_list = func(clf,sample)
