@@ -67,6 +67,7 @@ HTTP POST:
 - my_feature : name of feature_type. You can use any string for each type of feature vector. (e.g. rgb_histogram, hu_moment, SIFT, et al.)
 
 - CAUTION: In your custome applications, '{' and ':' in URL string should be url-encoded!! Please check specification of the HTTP library used in your application.
+- _ex) http://localhost:8080/ml/my_db/my_feature/add?json_data={"feature":[0.1,0.9],"ground_truth":"class001"}
 
 ### ${SAMPLE}
 sample has following parameters.
@@ -100,6 +101,7 @@ The format follows to pymongo. For more detail, please see online documentation
     http://localhost:8080/ml/my_db/my_feature/svc/train?json_data={"overwrite":${BOOL}, ${CLASSIFIER-PARAMS}}
 - svc: name of classifier. currently, only svc is supported.
 - overwrite: overwrite previously trained classifier if true (optional)
+- _ex) http://localhost:8080/ml/my_db/my_feature/svc/train?json_data={"overwrite":"True", "option":{"kernel":"rbf"}, "name":"my_classifier"}_
 
 ### ${CLASSIFIER-PARAMS}
 ${CLASSIFIER-PARAMS} has following parameters.
@@ -109,8 +111,11 @@ ${CLASSIFIER-PARAMS} has following parameters.
 - option: argument used in classifier training. (optional)
     http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
  - _ex) "option":${OPTION}_
-- name: Name of trained classifier data. This is used to identified trained classifier at prediction. If name is set, "selector" and "option" are ignored to search the corresponding classifier. (optional)
- - _ex) "name":"classifier20150622"
+- class_remap: Class remapping by regular expression (for use with hierarchical ground truth labels.)
+ - _ex) "class_remap":{"001":".*001","002":".*002"}_
+- name: Name of trained classifier data. This is used to identify the classifier at prediction. If name is set, "selector", "option", and "class_remap" can be abbreviated. (optional)
+ - _ex) "name":"classifier20150622"_
+
 ### ${BOOL}
 true or false
 
