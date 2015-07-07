@@ -64,17 +64,15 @@ def route_sample_treatment(database,feature_type,operation):
     return json.dumps(result,default=json_util.default)
 
 
-
-
-
 # leave-one-out
+@app.get('/leave_one_out/<database>/<feature_type>/<algorithm>')
 @app.get('/leave_one_out/<database>/<feature_type>/<algorithm>/')
 def get_one_out_leave(database,feature_type,algorithm):
     params = parse_params(request.params)
     if params.has_key('json_data'):
         json_data_s = params['json_data']
     else:
-        json_data_s = {}
+        json_data_s = "{}"
     db = mongo_client[database] 
     result = my_classifier.leave_one_out(db,json_data_s,feature_type,algorithm)
     return json.dumps(result,default=json_util.default)
@@ -87,7 +85,7 @@ def get_cross_validation(database,feature_type,algorithm,fold_num):
     if params.has_key('json_data'):
         json_data_s = params['json_data']
     else:
-        json_data_s = {}
+        json_data_s = "{}"
     db = mongo_client[database]
     result = my_classifier.cross_validation(db,json_data_s,feature_type,algorithm,fold_num)
     return json.dumps(result,default=json_util.default)
