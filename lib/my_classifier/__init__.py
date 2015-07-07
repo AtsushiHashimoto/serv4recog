@@ -12,6 +12,7 @@ import collections
 # for cross_validation
 import random
 
+import re
 import copy
 
 ################################################
@@ -49,6 +50,9 @@ def init_data(data):
                 data['option'][key] = val.encode('utf-8')
     else:        
         data['option'] = {}
+    if not data.has_key('class_remap'):
+        data['class_remap'] = {}
+        
     
 #############################################
 # MAIN FUNCTiON
@@ -281,8 +285,10 @@ def generate_clf_id(alg,feature_type,data):
             id = id + "::" + json.dumps(data['selector'])
         if bool(data['option']):
             id = id + "::" + json.dumps(data['option'])
+        if bool(data['class_remap']):
+            id = id + "::" + json.dumps(data['class_remap'])
     return id
-    
+
 
 #############################################
 # DECORATOR
@@ -294,9 +300,12 @@ def train_deco(algorithm):
             # 訓練に使うサンプルのqueryを作る
             selector = data['selector']
             option = data['option']
+            
+            # クラスのパターンが記述されていれば，それを使う
+            class_remap = data['class_remap']
 
             cls_id = generate_clf_id(algorithm,feature_type,data)
-                
+
             prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
             if data.has_key("overwrite") and data["overwrite"] in ["true",1,True,"True","TRUE"]:
@@ -307,18 +316,37 @@ def train_deco(algorithm):
                 
                 
             # クラスへの分類
-            samples = mongointerface.get_training_samples(db,feature_type,False,selector)
-            if 1 >= samples.count():
-                return error_json('Only %d samples are hit as training samples.'%samples.count())
-                
-            x = [[]] * samples.count()
-            y = [0] * samples.count()
+            samples = []
+            sample_count = 0
+            if not class_remap:
+                samples = mongointerface.get_training_samples(db,feature_type,False,selector)
+                sample_count = samples.count()
+            else:
+                # class_remap毎にサンプルを集める
+                for gt,pat in class_remap.items():
+                    selector['ground_truth'] = re.compile(pat)
+                    _samples = mongointerface.get_training_samples(db,feature_type,False,selector)
+                    if 1>= _samples.count():
+                        return error_json('No samples are hit by regular expression "%s"'%pat)
+                    for s in _samples:
+                        s['ground_truth'] = gt
+                        samples.append(s)
+                    sample_count += _samples.count()
+            if 1 >= sample_count:
+                return error_json('Only %d samples are hit as training samples.'%sample_count)
+
+            print len(samples)
+            print "samples_count = %d"%sample_count
+            # shuffle??            
+            x = [[]] * sample_count
+            y = [0] * sample_count
             class_count = collections.defaultdict(int)
 
             for i,s in enumerate(samples):
                 x[i] = s['ft']
                 y[i] = s['ground_truth']
                 class_count[s['ground_truth']] += 1
+
 
             class_list = sorted(class_count.keys())
 
@@ -330,7 +358,7 @@ def train_deco(algorithm):
                 #print i
                 #print cls
                 class_map[cls] = i
-                class_weight[i] = float(len(class_list) * (samples.count() - class_count[cls])) / float(samples.count())
+                class_weight[i] = float(len(class_list) * (sample_count - class_count[cls])) / float(sample_count)
                     
             #print class_map
             for i in range(len(y)):
