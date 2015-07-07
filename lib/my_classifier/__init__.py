@@ -320,9 +320,7 @@ def train_deco(algorithm):
 
 
             cls_id = generate_clf_id(algorithm,feature_type,data)
-            print type(data['name'])
-            print "classifier ID: %s"%cls_id
-
+            
             prev_clf = db["classifiers"].find({"_id":cls_id})
             overwrite = False
             if data.has_key("overwrite") and data["overwrite"] in ["true",1,True,"True","TRUE"]:
