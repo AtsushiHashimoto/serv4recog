@@ -311,16 +311,12 @@ def train_deco(algorithm):
             
             # 処理前に入力内容を記録
             record = {}
-            if bool(selector):
-                print "selector"
-                print selector
-                record['selector'] = copy.deepcopy(selector)
-            if bool(option):
-                print "option"
-                print option
-                record['option'] = copy.deepcopy(option)
-            if bool(class_remap):
-                record['class_remap'] = copy.deepcopy(class_remap)
+            #if bool(selector):
+            #    record['selector'] = copy.deepcopy(selector)
+            #if bool(option):
+            #    record['option'] = copy.deepcopy(option)
+            #if bool(class_remap):
+            #    record['class_remap'] = copy.deepcopy(class_remap)
 
 
             cls_id = generate_clf_id(algorithm,feature_type,data)
@@ -431,13 +427,13 @@ def predict_deco(algorithm):
                 return error_json(sys.exc_info()[1])
                 
             # selector等をチェックする
-            if record.has_key('selector'):
-                if data.has_key('selector') and record['selector'] != data['selector']:
-                    return error_json('selector does not match to the trained condition.')
-                if data.has_key('option') and record['option'] != data['option']:
-                    return error_json('option does not match to the trained condition.')
-                if data.has_key('class_remap') and record['class_remap'] != data['class_remap']:
-                    return error_json('option does not match to the trained condition.')
+            #if record.has_key('selector'):
+            #    if data.has_key('selector') and record['selector'] != data['selector']:
+            #        return error_json('selector does not match to the trained condition.')
+            #    if data.has_key('option') and record['option'] != data['option']:
+            #        return error_json('option does not match to the trained condition.')
+            #    if data.has_key('class_remap') and record['class_remap'] != data['class_remap']:
+            #        return error_json('option does not match to the trained condition.')
                 
 
             # algorithmに応じた処理(func)を行う
