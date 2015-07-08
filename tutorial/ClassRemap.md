@@ -8,10 +8,11 @@ By remapping ground_truth label using regular expression syntax, you can train a
 
 # Prerequirement
 - Add hirarchical classes
-    python script/generate_samples.py animal/mammal/human [11.1,11.9] [0.5,0.5] 20
-    python script/generate_samples.py animal/mammal/elephant [101.1,51.9] [0.5,0.5] 20
-		python script/generate_samples.py animal/bird/pegion [1.1,0.3] [0.2,0.1] 20
-    python script/generate_samples.py animal/bird/eagle [1.5,0.9] [0.2,0.2] 20
+
+        python script/generate_samples.py animal/mammal/human [11.1,11.9] [0.5,0.5] 20
+        python script/generate_samples.py animal/mammal/elephant [101.1,51.9] [0.5,0.5] 20
+        python script/generate_samples.py animal/bird/pegion [1.1,0.3] [0.2,0.1] 20
+        python script/generate_samples.py animal/bird/eagle [1.5,0.9] [0.2,0.2] 20
 
 # Train classifier in mammal/bird level
 - _http://localhost:8080/ml/my_db/test_feature/svc/train?json_data={"class_remap":{"mammal":".*/mammal/.*", "bird":".*/bird/.*"}, "name":"class_map_tutorial"}_

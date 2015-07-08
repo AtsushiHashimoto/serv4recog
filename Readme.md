@@ -50,7 +50,7 @@ Congratulation!!
 
 # Tutorial
  
-- https://github.com/AtsushiHashimoto/serv4recog/blob/master/tutorial/Readme.md
+- https://github.com/AtsushiHashimoto/serv4recog/blob/master/tutorial/
 
 # Protocol
 ## Add sample
