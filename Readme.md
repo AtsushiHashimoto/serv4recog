@@ -1,6 +1,6 @@
 # About this project
 Project Name: Server4recog
-Verion:	      0.2
+Verion:	      0.8
 Git Repo.:    https://github.com/AtsushiHashimoto/serv4recog
 
 # What is serv4recog?
