@@ -15,7 +15,7 @@ By remapping ground_truth label using regular expression syntax, you can train a
         python script/generate_samples.py animal/bird/eagle [1.5,0.9] [0.2,0.2] 20
 
 # Train classifier in mammal/bird level
-- _http://localhost:8080/ml/my_db/test_feature/svc/train?json_data={"class_remap":{"mammal":".*/mammal/.*", "bird":".*/bird/.*"}, "name":"class_map_tutorial"}_
+- _http://localhost:8080/ml/my_db/test_feature/svc/train?json_data={"class_remap":{"mammal":".\*/mammal/.\*", "bird":".\*/bird/.\*"}, "name":"class_map_tutorial"}_
 
 # Predict
 - _http://localhost:8080/ml/my_db/test_feature/svc/predict?json_data={"feature":[12.6,12.1],"name":"class_map_tutorial"}_
