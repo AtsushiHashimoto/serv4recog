@@ -1,12 +1,14 @@
 #-*- coding:utf-8 -*-
 
 from sample import Sample
+from large_shelve import LShelve
 import mongointerface
 import json
 import sys
 import functools
 
-import pickle
+
+
 import collections
 
 # for cross_validation
@@ -15,10 +17,32 @@ import random
 import re
 import copy
 
+# to support PCA 
+from sklearn.decomposition import PCA
+
+# cache trained models and other large data.
+my_shelve = None
+def open_shelve(dirname):
+    global my_shelve
+    my_shelve = LShelve(dirname)
+    
+def load_model(filename):
+    return my_shelve[filename]
+
+def save_model(filename,model):
+    my_shelve[filename] = model
+    return filename
+        
+def get_trained_model_filename(db_name,clf_id):
+    return "%s/%s"%(db_name,clf_id)  
+
+
+
 ################################################
 ### result dict. 
 ################################################
 def error_json(message):
+    print message
     return {'status':'error', 'message':message}
 
 def success_json():
@@ -28,17 +52,6 @@ def is_success(json):
     if json['status'] == 'success':
         return True
     return False
-
-
-
-
-def check_sample_source(data):
-    req_keys = ['feature']
-    for key in req_keys:
-        if data.has_key(key):
-            continue
-        return error_json("sample must contain '%s'"%key)
-    return success_json()
 
 def init_data(data):
     if not data.has_key('selector'):
@@ -72,7 +85,7 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 
 # train
     if operation=='train':
-        return mod.__dict__[operation](db,feature_type,data)
+        return mod.__dict__[operation](db,feature_type,data)        
 
 # clear_classifier
     elif operation=='clear_classifier':
@@ -81,6 +94,12 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 # clear_samples
     elif operation=='clear_samples':
         return mongointerface.clear_samples(db, feature_type, data)
+
+# get samples / sample detail
+    elif operation=='get_samples':
+        return mongointerface.get_samples(db,feature_type,data)
+    elif operation=='get_sample_detail':
+        return mongointerface.get_sample_detail(db,feature_type,data)
 
 # band
     elif operation=='band':
@@ -96,15 +115,18 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
 
     # operations using sample
     else:
-        check_result = check_sample_source(data)
-        if not is_success(check_result):
-            return check_result
-
-        # generate sample ID automatically (can be collapse if several samples add at once)
-        if not data.has_key('id'):
+        if data.has_key('id') and (operation != "add"):
+            sample = db[feature_type].find_one({'_id':data['id']})
+            if sample:
+                for k,v in sample.items():                    
+                    data[k] = v
+            # generate sample ID automatically (can be collapse if several samples add at once)
+        else:
             data['id'] = "sample_" +  "%012d" % db[feature_type].find().count()
 
         sample = Sample(data)
+        if not sample.ft:
+            return error_json("sample must contain 'feature'")                           
 
 # add
         if operation == 'add':
@@ -222,9 +244,10 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
             cmat = json.loads(m)
     result = success_json()
     result['confusion_matrix'] = cmat
-    cls_id = generate_clf_id(algorithm,feature_type,data)
-    result['event'] = {'_id':"cross_validation::" + cls_id}
+    clf_id = generate_clf_id(algorithm,feature_type,data)
+    result['event'] = {'_id':"cross_validation::" + clf_id}
     return result
+    
 
 # json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
 def leave_one_out(db, json_data_s, feature_type, algorithm):
@@ -267,8 +290,8 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
     result = mongointerface.evaluate(db, feature_type, data, algorithm)
     if result['status'] != 'success':
         return result
-    cls_id = generate_clf_id(algorithm,feature_type,data)
-    result['event'] = {'_id':"leave_one_out::" + cls_id}
+    clf_id = generate_clf_id(algorithm,feature_type,data)
+    result['event'] = {'_id':"leave_one_out::" + clf_id}
     return result
 
 
@@ -302,6 +325,7 @@ def train_deco(algorithm):
     def recieve_func(func):
         @functools.wraps(func)
         def wrapper(db,feature_type, data):
+            print "in func train_deco"
             # 訓練に使うサンプルのqueryを作る
             selector = data['selector']
             # 学習用関数に渡すパラメタ
@@ -319,9 +343,9 @@ def train_deco(algorithm):
             #    record['class_remap'] = copy.deepcopy(class_remap)
 
 
-            cls_id = generate_clf_id(algorithm,feature_type,data)
+            clf_id = generate_clf_id(algorithm,feature_type,data)
             
-            prev_clf = db["classifiers"].find({"_id":cls_id})
+            prev_clf = db["classifiers"].find({"_id":clf_id})
             overwrite = False
             if data.has_key("overwrite") and data["overwrite"] in ["true",1,True,"True","TRUE"]:
                 overwrite = True
@@ -329,7 +353,10 @@ def train_deco(algorithm):
             if prev_clf.count()>0 and not overwrite:
                 return error_json("Classifier already exist. To overwrite it, set overwrite option to be true.")
                 
-                
+            pca_components = 0
+            if data.has_key("pca"):
+                pca_components = int(data["pca"])
+                            
             # クラスへの分類
             samples = []
             sample_count = 0
@@ -377,27 +404,41 @@ def train_deco(algorithm):
                 
                 y[i] = class_map[y[i]]
 
-
+            if pca_components>0:
+                pca = PCA(n_components=pca_components,copy=False)
+                print "calc. PCA..."
+                x = pca.fit_transform(x)
+                print "done."
+                record['pca'] = save_model(get_trained_model_filename(db.name, clf_id + "::pca"),pca)
+                
             # algorithmに応じた処理(func)を行う
+            print "train..."
             clf=func(x,y,class_weight,option)
+            print "done"
 
 
             # 結果を保存
             ## algorithmに依存する部分
-            record['_id'] = cls_id
+            record['_id'] = clf_id
             event = {'_id':"train::" + record['_id']}
             
-            record['clf'] = pickle.dumps(clf)
+            print "pickle classifier..."
+            record['clf'] = save_model(get_trained_model_filename(db.name, clf_id),clf)
+            print "done."
             record['class_name2id'] = class_map
             class_map_inv = {str(v):k for k, v in class_map.items()}
             record['class_id2name'] = class_map_inv
             try:
-                db["classifiers"].replace_one({"_id":cls_id},record,True)
+                db["classifiers"].replace_one({"_id":clf_id},record,True)
             except:
+                print sys.exc_info()
                 return error_json(sys.exc_info()[1])
 
             result = success_json()
             result['event'] = event
+            print "return result successfully"
+            #print record['clf']
+            print record['pca']
             return result
         return wrapper
     return recieve_func
@@ -420,28 +461,33 @@ def predict_deco(algorithm):
                 record = collection.find_one({'_id':clf_id})
                 if record == None:
                     return error_json("No classifier was found.")
-                clf = pickle.loads(record['clf'])
+
+
+                print "load %s..."%record['clf']
+                clf = load_model(record['clf'])
+                print "done"
             except:
+                print sys.exc_info()[0]
                 return error_json(sys.exc_info()[1])
                 
-            # selector等をチェックする
-            #if record.has_key('selector'):
-            #    if data.has_key('selector') and record['selector'] != data['selector']:
-            #        return error_json('selector does not match to the trained condition.')
-            #    if data.has_key('option') and record['option'] != data['option']:
-            #        return error_json('option does not match to the trained condition.')
-            #    if data.has_key('class_remap') and record['class_remap'] != data['class_remap']:
-            #        return error_json('option does not match to the trained condition.')
-                
+
+            if record.has_key('pca'):
+                print "load %s..."%record['pca']
+                pca = load_model(record['pca'])
+                print "done"
+                feature = sample.ft
+                sample.ft = pca.transform(sample.ft)
 
             # algorithmに応じた処理(func)を行う
             likelihood_list = func(clf,sample)
+
+            if record.has_key('pca'):
+                sample.ft = feature
 
             likelihood_dict = {}
             for i,l in enumerate(likelihood_list):
                 key = record['class_id2name'][str(i)]
                 likelihood_dict[key] = l
-
                         
             # 予測結果をデータベースへ追加
             sample.likelihood[clf_id] = likelihood_dict
@@ -455,7 +501,7 @@ def predict_deco(algorithm):
             
             result = success_json()
             result['event'] = {'_id':"predict::"+clf_id+"::"+str(sample._id), 'sub_event':sub_result}
-            result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}
+            result['result'] = {'id':sample._id, 'ground_truth':sample.ground_truth,'likelihood':likelihood_dict}
             
             return result 
         return wrapper

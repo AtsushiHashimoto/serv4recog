@@ -17,8 +17,21 @@ app.config.load_config("%s/myapp.conf" % app.config['root'])
 
 
 # Connect to Mongo
-mongo_client = MongoClient(app.config['myapp.mongo_host'],int(app.config['myapp.mongo_port']))
+mongo_client = MongoClient(app.config['mongo.host'],int(app.config['mongo.port']))
 
+
+# set cache directory
+my_classifier.open_shelve("%s/%s"%(app.config['root'],app.config['myapp.shelve']))
+
+
+#json dumpsで例外クラスが来た時の関数
+def support_typeerror_default(o):
+    if isinstance(o, TypeError):
+        return "type error"
+    elif isinstance(o,IndexError):
+        print o
+        return "expected an indented block"
+    raise TypeError(repr(o) + " is not JSON serializable")
 
 @error('404')
 def error404(error):
@@ -41,8 +54,9 @@ def route_machine_learning_basic(database, feature_type, algorithm, operation):
                   json_data_s = "{}"
          print "param: " + json_data_s
          db = mongo_client[database]
+         
          result = my_classifier.route(db, json_data_s, operation, feature_type, algorithm)
-         print result
+         #print result
          return json.dumps(result,default=json_util.default)
 
 
@@ -50,7 +64,7 @@ def route_machine_learning_basic(database, feature_type, algorithm, operation):
 @app.route('/ml/<database>/<feature_type>/<operation>', ['GET', 'POST'])
 def route_sample_treatment(database,feature_type,operation):
     # add, clear_samples, band, disband
-    if operation not in ['add','clear_samples','band','disband']:
+    if operation not in ['add','clear_samples','band','disband','get_samples','get_sample_detail']:
         return {"status": "Error", "message":"operation '%s' without algorithm in the url is not allowed" % operation}
     
     params = parse_params(request.params)

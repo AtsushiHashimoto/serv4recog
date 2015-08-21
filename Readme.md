@@ -31,6 +31,13 @@ rename 'myapp.conf.example' to 'myapp.conf' and edit the contents for your envir
 
     %cp myapp.conf.example myapp.conf
 
+give write permission to ./classifiers directory (and files if exists).
+
+    %chmod 777 classifiers
+    %chmod 666 classifiers/*
+
+ - You can change the directory in myapp.conf setting.
+
 # Execute
 At the serv4recog directory on a terminal, start up mongod.
 
@@ -130,6 +137,15 @@ page
 ## Evaluate
     http://localhost:8080/ml/my_db/my_feature/svc/evaluate?json_data=${CLASSIFIER-PARAMS}
 
+## Get Samples
+HTTP GET:
+    http://localhost:8080/ml/my_db/my_feature/get_samples?json_data=${Selector}
+
+ - return sample IDs
+## Get Sample Detail
+HTTP GET:
+    http://localhost:8080/ml/my_db/my_feature/get_sample_id?json_data={"id":"sample_id"}
+
 ## Clear Samples
     http://localhost:8080/ml/my_db/my_feature/clear_samples?json_data={"selector":${SELECTOR}}
 
@@ -138,6 +154,7 @@ page
 
 ## Group
     http://localhost:8080/ml/my_db/my_feature/group?json_data={"selector":${SELECTOR}, "group":["selected_samples01"]}
+
 
 # Contribution
 We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!

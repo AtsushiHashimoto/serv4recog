@@ -93,17 +93,42 @@ def get_any_samples(feature_type, group_all=[],selector={}):
 def add(db, feature_type, sample):
     print "function: add"
     collection = db[feature_type]
-
     if collection.find({'_id':sample._id}).count()>0:
         return my_classifier.error_json("sample " + sample._id + " already exists.")
     
+    print collection.find({}).count()
+    print sample.__dict__
     try:
-        collection.insert_one(sample.__dict__)
+        collection.insert(sample.__dict__)
     except:
-        return my_classifier.error_json(sys.exc_info()[0])
+        return my_classifier.error_json(str(sys.exc_info()))
     return my_classifier.success_json()
 
+@access_history_log
+def get_samples(db, feature_type, data):
+    collection = db[feature_type]
+    query = data['selector']
+    samples = collection.find(query)
+    if samples.count() == 0:
+        return my_classifier.error_json("No samples are hit")
+    result = my_classifier.success_json()
+    result['samples'] = []
+    for s in samples:
+        result['samples'].append(s['_id'])
 
+    result['event'] = {'_id': generate_event_id('get_samples',feature_type, query)}
+    return result
+@access_history_log
+def get_sample_detail(db, feature_type,data):
+    collection = db[feature_type]
+    query = {'_id':data['id']}
+    sample = collection.find_one(query)
+    if not sample:
+        return my_classifier.error_json("No samples are hit")
+    result = my_classifier.success_json()
+    result['sample'] =sample
+    result['event'] = {'_id': generate_event_id('get_sample_detail',feature_type, query)}
+    return result
 
 @access_history_log
 def clear_classifier(db, feature_type, data, algorithm):
@@ -134,7 +159,7 @@ def clear_classifier(db, feature_type, data, algorithm):
 @access_history_log
 def clear_samples(db,feature_type,data):
     print "in clear_samples"
-    query = {}
+    #query = {}
     query = data['selector']
     collection = db[feature_type]
     data_count = collection.find(query).count()
