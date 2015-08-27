@@ -443,7 +443,7 @@ def train_deco(algorithm):
             result['event'] = event
             print "return result successfully"
             #print record['clf']
-            print record['pca']
+            #print record['pca']
             return result
         return wrapper
     return recieve_func
