@@ -366,10 +366,15 @@ def train_deco(algorithm):
             else:
                 # class_remap毎にサンプルを集める
                 for gt,pat in class_remap.items():
+                    # patを解析する必要???
+                    # または/hoge/という文字列であれば十分??要検証
+                    # $regexが使えるなら，selectorにdeep_mergeでpatを突っ込むだけで良い?．
                     selector['ground_truth'] = re.compile(pat)
                     _samples = mongointerface.get_training_samples(db,feature_type,False,selector)
                     if 1>= _samples.count():
-                        return error_json('No samples are hit by regular expression "%s"'%pat)
+                        # サンプルがない場合はclassから削除して認識対象外とする                        
+                        continue
+                        #return error_json('No samples are hit by regular expression "%s"'%pat)
                     for s in _samples:
                         s['ground_truth'] = gt
                         samples.append(s)
