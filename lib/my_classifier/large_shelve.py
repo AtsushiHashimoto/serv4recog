@@ -30,8 +30,22 @@ class LShelve:
             idx=len(self.cache)
             self.cache.append(obj)
             self.shelve[index] = idx
+    def recover_item(self,index,file):
+        if index in self.shelve.keys():
+            return self.shelve[index]
+        obj = pickle.load(open(file))
+        self[index] = obj
+        return self.shelve[index]
+
     def __getitem__(self,index):
-        idx = self.shelve[index]
+        if index not in self.shelve.keys():
+            file = self.cache_file_name(index)
+            if os.path.exists(file):
+                idx = self.recover_item(index,file)
+            else:
+                raise KeyError("'%s' is not found in keys of LShelve")    
+        else:
+            idx = self.shelve[index]
         if self.cache[idx]==None:
             obj = pickle.load(open(self.cache_file_name(index)))
             self.cache[idx] = obj
