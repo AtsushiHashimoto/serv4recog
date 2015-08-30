@@ -6,7 +6,7 @@ import mongointerface
 import json
 import sys
 import functools
-
+import math
 
 
 import collections
@@ -393,16 +393,23 @@ def train_deco(algorithm):
                 class_count[s['ground_truth']] += 1
 
 
+
+
             class_list = sorted(class_count.keys())
 
             # クラスの「重み付け」
             class_map = {}
             class_weight = {}
+            z = 0
+            for i,cls in enumerate(class_list):
+                z += math.exp(class_count[cls])
+                
             for i,cls in enumerate(class_list):
                 #print i
                 #print cls
                 class_map[cls] = i
-                class_weight[i] = float(len(class_list) * (sample_count - class_count[cls])) / float(sample_count)
+                # soft max で重みを決める             
+                class_weight[i] = float(len(class_list) * (z  - math.exp(class_count[cls]))) / float(z)
                     
             #print class_map
             for i in range(len(y)):
