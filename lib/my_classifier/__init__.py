@@ -12,6 +12,7 @@ import numpy
 import collections
 
 # for cross_validation
+import math
 import random
 
 import re
@@ -390,6 +391,7 @@ def train_deco(algorithm):
             class_list = sorted(class_count.keys())
                 
             # 特定のサンプルが多すぎる場合に間引く
+                
             if option.has_key('max_class_samples_by_median'):
                 max_class_sample_num =  int(option['max_class_samples_by_median'] * numpy.median(numpy.array(class_count.values())))
                 del option['max_class_samples_by_median']
@@ -411,9 +413,10 @@ def train_deco(algorithm):
                 sample_count = len(samples)
                 print sample_count
 
+            
                 
             x = [[]] * sample_count
-            y = [0] * sample_count                    
+            y = [0] * sample_count
             for i,s in enumerate(samples):
                 x[i] = s['ft']
                 y[i] = s['ground_truth']
@@ -421,6 +424,10 @@ def train_deco(algorithm):
 
 
             # クラスの「重み付け」
+            z = 0
+            for i,cls in enumerate(class_list):
+                z += math.exp(class_count[cls])
+
             class_map = {}
             class_weight = {}
             for i,cls in enumerate(class_list):
@@ -428,7 +435,7 @@ def train_deco(algorithm):
                 #print cls
                 class_map[cls] = i
                 # soft max で重みを決める             
-                class_weight[i] = float(len(class_list) * (sample_count - class_count[cls])) / float(sample_count)
+                class_weight[i] = float(len(class_list) * (z - math.exp(class_count[cls]))) / float(z)
                     
             #print class_map
             for i in range(len(y)):
