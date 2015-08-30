@@ -6,7 +6,7 @@ import mongointerface
 import json
 import sys
 import functools
-import math
+import numpy
 
 
 import collections
@@ -382,34 +382,53 @@ def train_deco(algorithm):
             if 1 >= sample_count:
                 return error_json('Only %d samples are hit as training samples.'%sample_count)
 
-            # shuffle??            
-            x = [[]] * sample_count
-            y = [0] * sample_count
             class_count = collections.defaultdict(int)
 
             for i,s in enumerate(samples):
-                x[i] = s['ft']
-                y[i] = s['ground_truth']
                 class_count[s['ground_truth']] += 1
 
-
-
-
             class_list = sorted(class_count.keys())
+                
+            # 特定のサンプルが多すぎる場合に間引く
+            if option.has_key('max_class_samples_by_median'):
+                max_class_sample_num =  int(option['max_class_samples_by_median'] * numpy.median(numpy.array(class_count.values())))
+                del option['max_class_samples_by_median']
+                
+                _samples = []
+                for i,cls in enumerate(class_list):
+                    cls_samples = [s for s in samples if s['ground_truth']==cls]
+                    #print "num(samples from %s): %d"%(cls,len(cls_samples))
+                    if class_count[cls] <= max_class_sample_num:
+                        #print "%s: %f <= %f"%(cls,prob,max_prior)
+                        _samples.extend(cls_samples)
+                    else:
+                        #print "%s: %f > %f"%(cls,prob,max_prior)
+                        _samples.extend(random.sample(cls_samples,max_class_sample_num))
+                        class_count[cls] = max_class_sample_num
+                random.shuffle(_samples)
+                samples = _samples
+                print sample_count
+                sample_count = len(samples)
+                print sample_count
+
+                
+            x = [[]] * sample_count
+            y = [0] * sample_count                    
+            for i,s in enumerate(samples):
+                x[i] = s['ft']
+                y[i] = s['ground_truth']
+
+
 
             # クラスの「重み付け」
             class_map = {}
             class_weight = {}
-            z = 0
-            for i,cls in enumerate(class_list):
-                z += math.exp(class_count[cls])
-                
             for i,cls in enumerate(class_list):
                 #print i
                 #print cls
                 class_map[cls] = i
                 # soft max で重みを決める             
-                class_weight[i] = float(len(class_list) * (z  - math.exp(class_count[cls]))) / float(z)
+                class_weight[i] = float(len(class_list) * (sample_count - class_count[cls])) / float(sample_count)
                     
             #print class_map
             for i in range(len(y)):
@@ -440,6 +459,7 @@ def train_deco(algorithm):
             record['class_name2id'] = class_map
             class_map_inv = {str(v):k for k, v in class_map.items()}
             record['class_id2name'] = class_map_inv
+            record['class_count'] = class_count
             try:
                 db["classifiers"].replace_one({"_id":clf_id},record,True)
             except:
