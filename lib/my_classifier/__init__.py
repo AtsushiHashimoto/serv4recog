@@ -371,6 +371,7 @@ def train_deco(algorithm):
             if not class_remap:
                 samples = mongointerface.get_training_samples(db,feature_type,False,selector)
                 sample_count = samples.count()
+                samples = list(samples)
             else:
                 # class_remap毎にサンプルを集める
                 for gt,pat in class_remap.items():
@@ -379,7 +380,7 @@ def train_deco(algorithm):
                     # $regexが使えるなら，selectorにdeep_mergeでpatを突っ込むだけで良い?．
                     selector['ground_truth'] = re.compile(pat)
                     _samples = mongointerface.get_training_samples(db,feature_type,False,selector)
-                    if min_sample_count>= _samples.count():
+                    if min_sample_count >= _samples.count():
                         # 十分なサンプルがない場合はclassから削除して認識対象外とする                        
                         continue
                         #return error_json('No samples are hit by regular expression "%s"'%pat)
@@ -387,18 +388,20 @@ def train_deco(algorithm):
                         s['ground_truth'] = gt
                         samples.append(s)
                     sample_count += _samples.count()
-            if 1 >= sample_count:
+
+            if min_sample_count >= sample_count:
                 return error_json('Only %d samples are hit as training samples.'%sample_count)
 
             class_count = collections.defaultdict(int)
+
+
 
             for i,s in enumerate(samples):
                 class_count[s['ground_truth']] += 1
 
             class_list = sorted(class_count.keys())
                 
-            # 特定のサンプルが多すぎる場合に間引く
-                
+            # 特定のサンプルが多すぎる場合に間引く                
             if option.has_key('max_class_samples_by_median'):
                 max_class_sample_num =  int(option['max_class_samples_by_median'] * numpy.median(numpy.array(class_count.values())))
                 del option['max_class_samples_by_median']
@@ -420,8 +423,8 @@ def train_deco(algorithm):
                 sample_count = len(samples)
                 print sample_count
 
-            
-                
+
+                           
             x = [[]] * sample_count
             y = [0] * sample_count
             for i,s in enumerate(samples):
@@ -441,11 +444,14 @@ def train_deco(algorithm):
                 #print i
                 #print cls
                 class_map[cls] = i
-                # soft max で重みを決める
-                class_weight[i] = float(sample_count * class_count[cls]) / float(sample_count)
+                class_weight[i] = float(len(class_list) * (sample_count - class_count[cls])) / float(sample_count)
 
+            print class_map
             #print class_map
-            for i in range(len(y)):                
+            for i in range(len(y)):            
+                #print i
+                #print y[i]
+                #print class_map[y[i]]
                 y[i] = class_map[y[i]]
 
             if pca_components>0:
