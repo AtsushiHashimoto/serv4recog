@@ -6,3 +6,5 @@ tar_dir
 *.
 .DS_Store
 *.gz
+db_local
+dump_files
