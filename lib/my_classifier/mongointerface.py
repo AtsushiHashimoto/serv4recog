@@ -74,7 +74,7 @@ def sample_treater(func):
 # MongDBから目的のサンプルを集める
 def get_training_samples(db,feature_type, clustering = False, selector={}):
     query = selector
-    if not clustering and not query['ground_truth']:
+    if not clustering and not query.has_key('ground_truth'):
         query['ground_truth'] = {"$exists": True}
     return db[feature_type].find(query)
 
