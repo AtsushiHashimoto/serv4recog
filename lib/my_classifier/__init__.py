@@ -424,9 +424,9 @@ def train_deco(algorithm):
 
 
             # クラスの「重み付け」
-            z = 0
-            for i,cls in enumerate(class_list):
-                z += math.exp(class_count[cls])
+            #z = 0
+            #for i,cls in enumerate(class_list):
+            #    z += math.exp(class_count[cls])
 
             class_map = {}
             class_weight = {}
@@ -434,12 +434,11 @@ def train_deco(algorithm):
                 #print i
                 #print cls
                 class_map[cls] = i
-                # soft max で重みを決める             
-                class_weight[i] = float(len(class_list) * (z - math.exp(class_count[cls]))) / float(z)
-                    
+                # soft max で重みを決める
+                class_weight[i] = float(sample_count * class_count[cls]) / float(sample_count)
+
             #print class_map
-            for i in range(len(y)):
-                
+            for i in range(len(y)):                
                 y[i] = class_map[y[i]]
 
             if pca_components>0:
