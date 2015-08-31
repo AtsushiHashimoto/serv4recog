@@ -357,7 +357,14 @@ def train_deco(algorithm):
             pca_components = 0
             if data.has_key("pca"):
                 pca_components = int(data["pca"])
-                            
+                  
+
+            min_sample_count = 1
+            if option.has_key('min_sample_count'):
+                min_sample_count = int(option['min_sample_count'])
+                del option['min_sample_count']
+                  
+                  
             # クラスへの分類
             samples = []
             sample_count = 0
@@ -372,8 +379,8 @@ def train_deco(algorithm):
                     # $regexが使えるなら，selectorにdeep_mergeでpatを突っ込むだけで良い?．
                     selector['ground_truth'] = re.compile(pat)
                     _samples = mongointerface.get_training_samples(db,feature_type,False,selector)
-                    if 1>= _samples.count():
-                        # サンプルがない場合はclassから削除して認識対象外とする                        
+                    if min_sample_count>= _samples.count():
+                        # 十分なサンプルがない場合はclassから削除して認識対象外とする                        
                         continue
                         #return error_json('No samples are hit by regular expression "%s"'%pat)
                     for s in _samples:
