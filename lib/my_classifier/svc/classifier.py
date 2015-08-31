@@ -18,12 +18,13 @@ def test():
 @my_classifier.mongointerface.access_history_log
 @my_classifier.train_deco('svc')
 def train(x,y,class_weight,option):
-    option['class_weight'] = class_weight
-    for key,val in option.items():
-        option[key] = val
+    #option['class_weight'] = class_weight
+    #for key,val in option.items():
+    #    option[key] = val
         
     # probability must be true in serv4recog
     option['probability'] = True
+    option['class_weight'] = 'auto'
     clf = svm.SVC(**option)
     clf.fit(x,y)
     return clf
