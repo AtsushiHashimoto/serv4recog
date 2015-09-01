@@ -537,6 +537,9 @@ def predict_deco(algorithm):
 
             likelihood_dict = {}
             for i,l in enumerate(likelihood_list):
+                if not record['class_id2name'].has_key(str(i)):
+                    # 本来，ここは通らないはず．稀にclass_id2nameに登録されていないクラスID (カテゴリ数と一致を返す．scikit-learnの仕様??要調査
+                    continue
                 key = record['class_id2name'][str(i)]
                 likelihood_dict[key] = l
                         
