@@ -31,14 +31,14 @@ class LShelve:
             self.cache.append(obj)
             self.shelve[index] = idx
     def recover_item(self,index,file):
-        if index in self.shelve.keys():
+        if self.shelve.has_key(index):
             return self.shelve[index]
         obj = pickle.load(open(file))
         self[index] = obj
         return self.shelve[index]
 
     def __getitem__(self,index):
-        if index not in self.shelve.keys():
+        if not self.shelve.has_key(index):
             file = self.cache_file_name(index)
             if os.path.exists(file):
                 idx = self.recover_item(index,file)
@@ -60,6 +60,7 @@ class LShelve:
                 os.makedirs(dirname)
         filename = self.cache_file_name(index)
         pickle.dump(obj,open(filename,"wb"))
+        
 
     def __delitem__(self,index):
         idx = self.shelve[index]
@@ -74,6 +75,8 @@ class LShelve:
             print "self.shelve[%s]=%d"%(k,self.shelve[k])
     def keys(self):
         return self.shelve.keys()
+    def values(self):
+        return self.cache
       
 if __name__ == '__main__':
     import sys
