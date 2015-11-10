@@ -3,6 +3,7 @@ from sklearn import svm
 
 import os
 import sys
+import numpy
 sys.path.append(os.path.dirname(__file__)+"../../")
 import my_classifier.mongointerface
 import my_classifier
@@ -27,6 +28,11 @@ def train(x,y,class_weight,option):
     option['class_weight'] = 'auto'
     clf = svm.SVC(**option)
     clf.fit(x,y)
+
+    # 不要なデータを初期化(シリアライズ化したデータを軽量化するため)
+    clf.__dict__["support_"]=numpy.array([numpy.int32(0)])
+    clf.__dict__["support_vectors_"]=numpy.array([numpy.array([numpy.float64(0)])])
+
     return clf
 
 
