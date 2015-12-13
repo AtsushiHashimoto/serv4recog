@@ -137,7 +137,7 @@ if __name__ == '__main__':
     
     # option for training classifier.(For the detail of possible parameters, refer scikit-learn SVC)
     # http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC
-    option = {'kernel':'rbf','max_iter':10} # optional
+    option = {'kernel':'rbf','max_iter':10, 'sparse':1} # optional
 
     # order: 学習させる際のオプション 
     # order.force: trueなら学習済みの識別器があっても再度学習をし直す．省略時はFalse(未実装)

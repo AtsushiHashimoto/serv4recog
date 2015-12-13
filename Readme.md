@@ -116,8 +116,12 @@ ${CLASSIFIER-PARAMS} has following parameters.
 - selector: limits training samples. (optional)
  - _ex) "selector":${SELECTOR}_
 - option: argument used in classifier training. (optional)
-    http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
  - _ex) "option":${OPTION}_
+ - serv4recog imprimented options
+  -  pca: apply principle component analysis and compress feature vectors to N dimentions.
+  -  sparse: convert feature vector to sparse vector (scipy.sparse.csr_matrix).
+ - classifier depending options
+  - http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
 - class_remap: Class remapping by regular expression (for use with hierarchical ground truth labels.)
  - _ex) "class_remap":{"001":".*001","002":".*002"}_
 - name: Name of trained classifier data. This is used to identify the classifier at prediction. If name is set, "selector", "option", and "class_remap" can be abbreviated. (optional)
@@ -158,4 +162,3 @@ HTTP GET:
 
 # Contribution
 We welocome new contributers. At first, please branch the project, edit it, and send us the editted branch!
-
