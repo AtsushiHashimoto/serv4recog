@@ -52,6 +52,10 @@ def route_machine_learning_basic(database, feature_type, algorithm, operation):
                   json_data_s = params['json_data']
          else:
                   json_data_s = "{}"
+                  
+         if type(json_data_s) == unicode:
+                  json_data_s = json_data_s.encode('utf-8')
+
          print "param: " + json_data_s
          db = mongo_client[database]
          
@@ -72,6 +76,8 @@ def route_sample_treatment(database,feature_type,operation):
         json_data_s = params['json_data']
     else:
         json_data_s = "{}"
+    if type(json_data_s) == unicode:
+        json_data_s = json_data_s.encode('utf-8')
     db = mongo_client[database]
     result = my_classifier.route(db,json_data_s,operation,feature_type)
     print result
