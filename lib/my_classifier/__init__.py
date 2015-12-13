@@ -21,6 +21,9 @@ import copy
 # to support PCA 
 from sklearn.decomposition import PCA
 
+# for sparse mat
+from scipy.sparse import lil_matrix, csr_matrix
+
 # cache trained models and other large data.
 my_shelve = None
 def open_shelve(dirname):
@@ -363,6 +366,8 @@ def train_deco(algorithm):
             if option.has_key('min_sample_count'):
                 min_sample_count = int(option['min_sample_count'])
                 del option['min_sample_count']
+                
+                
                   
                   
             # クラスへの分類
@@ -432,6 +437,9 @@ def train_deco(algorithm):
                 y[i] = s['ground_truth']
 
 
+            if option.has_key('sparse'):
+                x = lil_matrix(x).tocsr()
+                del option['sparse']
 
             # クラスの「重み付け」
             #z = 0
@@ -460,6 +468,9 @@ def train_deco(algorithm):
                 x = pca.fit_transform(x)
                 print "done."
                 record['pca'] = save_model(get_trained_model_filename(db.name, clf_id + "::pca"),pca)
+                
+            if type(x) == csr_matrix:
+                record['sparse'] = True                
                 
             # algorithmに応じた処理(func)を行う
             print "train..."
@@ -528,9 +539,15 @@ def predict_deco(algorithm):
                 print "done"
                 feature = sample.ft
                 sample.ft = pca.transform(sample.ft)
+                
+            # sparseな学習をしても通常のベクトルを入力として良い
+            # (逆にsparseなベクトルを入れると出力のlikelihoodもsparseになる)
+            #if record.has_key('sparse'):
+            #    sample.ft = lil_matrix(sample.ft).tocsr()
 
             # algorithmに応じた処理(func)を行う
             likelihood_list = func(clf,sample)
+            
 
             if record.has_key('pca'):
                 sample.ft = feature

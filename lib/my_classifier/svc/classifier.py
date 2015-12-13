@@ -26,12 +26,13 @@ def train(x,y,class_weight,option):
     # probability must be true in serv4recog
     option['probability'] = True
     option['class_weight'] = 'auto'
-    clf = svm.SVC(**option)
+    clf = svm.SVC(**option)       
+    
     clf.fit(x,y)
 
     # 不要なデータを初期化(シリアライズ化したデータを軽量化するため)
-    clf.__dict__["support_"]=numpy.array([numpy.int32(0)])
-    clf.__dict__["support_vectors_"]=numpy.array([numpy.array([numpy.float64(0)])])
+#   for k,v in clf.__dict__.items():
+#        print k, ": ", v
 
     return clf
 
