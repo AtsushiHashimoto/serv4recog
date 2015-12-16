@@ -20,17 +20,30 @@ class LShelve:
         self.cache = [None]*len(self.shelve.keys())
         
     def cache_file_name(self,index):
+        index = self.safe_index(index)
         return "%s/%s.dump"%(self.cache_dir,index)
+
+    def safe_index(self,index):
+        _index = index
+        if type(index) is unicode:
+            _index = index.encode('utf-8')    
+        return _index
         
     def shallow_set_item(self,index,obj):
+        index = self.safe_index(index)
         if index in self.shelve.keys():
             idx=self.shelve[index]
             self.cache[idx]=obj
         else:
             idx=len(self.cache)
             self.cache.append(obj)
-            self.shelve[index] = idx
+            _index = index
+            if type(index) is unicode:
+                _index = index.encode('utf-8')
+            self.shelve[_index] = idx
+            
     def recover_item(self,index,file):
+        index = self.safe_index(index)
         if self.shelve.has_key(index):
             return self.shelve[index]
         obj = pickle.load(open(file))
@@ -38,6 +51,7 @@ class LShelve:
         return self.shelve[index]
 
     def __getitem__(self,index):
+        index = self.safe_index(index)
         if not self.shelve.has_key(index):
             file = self.cache_file_name(index)
             if os.path.exists(file):
@@ -51,7 +65,9 @@ class LShelve:
             self.cache[idx] = obj
             return obj
         return self.cache[idx]        
+
     def __setitem__(self,index,obj):
+        index = self.safe_index(index)
         self.shallow_set_item(index,obj)
         dirname = os.path.dirname(index)
         if dirname:
@@ -63,6 +79,7 @@ class LShelve:
         
 
     def __delitem__(self,index):
+        index = self.safe_index(index)
         idx = self.shelve[index]
         # データ本体を削除
         del self.cache[idx]
