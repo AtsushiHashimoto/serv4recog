@@ -118,14 +118,15 @@ def route(db, json_data_s, operation, feature_type, algorithm=None):
         return mongointerface.evaluate(db, feature_type, data, algorithm)
 
     # operations using sample
-    else:
-        if data.has_key('id') and (operation != "add"):
-            sample = db[feature_type].find_one({'_id':data['id']})
-            if sample:
-                for k,v in sample.items():                    
-                    data[k] = v
-            # generate sample ID automatically (can be collapse if several samples add at once)
-        else:
+    else:        
+        if data.has_key('id'):
+            if (operation != "add"):
+                sample = db[feature_type].find_one({'_id':data['id']})
+                if sample:
+                    for k,v in sample.items():                    
+                        data[k] = v
+        # generate sample ID automatically (can be collapse if several samples add at once)
+        else:            
             data['id'] = "sample_" +  "%012d" % db[feature_type].find().count()
 
         sample = Sample(data)
