@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#from multiprocessing import Process, Queue, cpu_count
 from bottle import Bottle, request, run, error#, template
 from bson import json_util
 from pymongo import MongoClient
@@ -14,7 +15,7 @@ import my_classifier
 app = Bottle()
 app.config['root'] = os.path.dirname(os.path.abspath(__file__))
 app.config.load_config("%s/myapp.conf" % app.config['root'])
-
+#app.nb_workers = cpu_count()
 
 # Connect to Mongo
 mongo_client = MongoClient(app.config['mongo.host'],int(app.config['mongo.port']))
@@ -22,6 +23,8 @@ mongo_client = MongoClient(app.config['mongo.host'],int(app.config['mongo.port']
 
 # set cache directory
 my_classifier.open_shelve("%s/%s"%(app.config['root'],app.config['myapp.shelve']))
+
+
 
 
 #json dumpsで例外クラスが来た時の関数
@@ -93,6 +96,9 @@ def get_one_out_leave(database,feature_type,algorithm):
         json_data_s = params['json_data']
     else:
         json_data_s = "{}"
+    if type(json_data_s) == unicode:
+        json_data_s = json_data_s.encode('utf-8')
+                 
     db = mongo_client[database] 
     result = my_classifier.leave_one_out(db,json_data_s,feature_type,algorithm)
     return json.dumps(result,default=json_util.default)
@@ -106,14 +112,17 @@ def get_cross_validation(database,feature_type,algorithm,fold_num):
         json_data_s = params['json_data']
     else:
         json_data_s = "{}"
+    if type(json_data_s) == unicode:
+        json_data_s = json_data_s.encode('utf-8')
     db = mongo_client[database]
     result = my_classifier.cross_validation(db,json_data_s,feature_type,algorithm,fold_num)
     return json.dumps(result,default=json_util.default)
 
 
-if app.config['myapp.env']=='development':
-         print 'run in development mode'
-         run(app, host='localhost', port=8080,debug=True, reloader=True)
-else:
-         print 'run in production mode'
-         run(app, host='localhost',port=8080)
+if __name__ == '__main__':        
+    if app.config['myapp.env']=='development':
+        print 'run in development mode'
+        run(app, host=app.config['myapp.host'], port=int(app.config['myapp.port']),debug=True, reloader=True)
+    else:
+        print 'run in production mode'
+        run(app, host=app.config['myapp.host'], port=int(app.config['myapp.port']))
