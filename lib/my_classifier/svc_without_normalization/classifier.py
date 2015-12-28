@@ -40,17 +40,16 @@ def train(x,y,class_weight,option):
 #@my_classifier.mongointerface.sample_treater
 #@my_classifier.predict_deco('svc_without_normalization')
 def predict(clf_list,sample):
-    dists =clf.decision_function(sample)
+    dfs =clf.decision_function(sample)
     likelihoods = []
-    for dist in dists:
+    for df in dfs:
         likelihood = []
-        for i in range(len(dist)):
-            dist_i = dist[i]
-            min_dist = min(list(dist)[:i]+list(dist)[(i+1):])
-            likelihood.append(dist_i/(dist_i+min_dist))
+        for i in range(len(df)):
+            df_i = df[i]
+            max_df = max(list(df)[:i]+list(df)[(i+1):])
+            likelihood.append(df_i/(df_i+max_df))
         likelihoods.append(likelihood)
-        print(likelihood)
-    return likelihoods
+    return 1/(1+np.exp(-np.array(likelihoods)))
     
 if __name__ == '__main__':
     argvs = sys.argv
@@ -63,4 +62,4 @@ if __name__ == '__main__':
     sample = numpy.loadtxt(argvs[3],delimiter=',')
     
     clf = train(x,y,class_weight,option)
-    predict(clf,sample)
+    print predict(clf,sample)
