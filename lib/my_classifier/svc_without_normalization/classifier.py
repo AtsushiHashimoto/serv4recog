@@ -17,7 +17,7 @@ def test():
 @my_classifier.mongointerface.access_history_log
 @my_classifier.train_deco('svc_without_normalization')
 def train(x,y,class_weight,option):
-    _train(x,y,class_weight,option)
+    return _train(x,y,class_weight,option)
     
 def _train(x,y,class_weight,option):
     #option['class_weight'] = class_weight
@@ -38,11 +38,11 @@ def _train(x,y,class_weight,option):
 @my_classifier.mongointerface.access_history_log
 @my_classifier.mongointerface.sample_treater
 @my_classifier.predict_deco('svc_without_normalization')
-def predict(clf_list,sample):
-    _predict(clf_list,sample)
+def predict(clf,sample):
+    return _predict(clf,sample)
         
-def _predict(clf_list,sample):
-    dfs =clf.decision_function(sample)
+def _predict(clf,sample):
+    dfs =clf.decision_function(sample.ft)
     likelihoods = []
     for df in dfs:
         likelihood = []
@@ -51,7 +51,7 @@ def _predict(clf_list,sample):
             max_df = max(list(df)[:i]+list(df)[(i+1):])
             likelihood.append(df_i/(df_i+max_df))
         likelihoods.append(likelihood)
-    return 1/(1+np.exp(-np.array(likelihoods)))
+    return (1/(1+np.exp(-np.array(likelihoods)))).tolist()[0]
     
 if __name__ == '__main__':
     argvs = sys.argv
