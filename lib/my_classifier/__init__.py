@@ -573,7 +573,9 @@ def predict_deco(algorithm):
             
             result = success_json()
             result['event'] = {'_id':"predict::"+clf_id+"::"+str(sample._id), 'sub_event':sub_result}
-            result['result'] = {'id':sample._id, 'ground_truth':sample.ground_truth,'likelihood':likelihood_dict}
+            result['result'] = {'id':sample._id, 'likelihood':likelihood_dict}            
+            if sample.ground_truth:
+                result['result']['ground_truth'] = sample.ground_truth
             
             return result 
         return wrapper

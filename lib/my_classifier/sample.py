@@ -23,6 +23,8 @@ class Sample:
       			self._id = json_data['_id']
 		if json_data.has_key('ground_truth'):
 			self.ground_truth = json_data['ground_truth']
+		else:
+			self.ground_truth = None               
 		if json_data.has_key('group'):
 			self.group = ensure_list(json_data['group'])
 		else:
