@@ -46,7 +46,7 @@ def get_trained_model_filename(db_name,clf_id):
 ### result dict. 
 ################################################
 def error_json(message):
-    print message
+    print(message)
     return {'status':'error', 'message':message}
 
 def success_json():
@@ -76,9 +76,9 @@ def init_data(data):
 #############################################
 
 def route(db, json_data_s, operation, feature_type, algorithm=None):
-    print "function: route"
-    print "operation => " + operation
-    print json_data_s
+    print("function: route")
+    print("operation => " + operation)
+    print(json_data_s)
     data = json.loads(json_data_s)
     
     init_data(data)
@@ -160,7 +160,7 @@ def merge_confusion_matrix(mat1,mat2):
     return mat_new
 
 def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
-    print "function: cross_validation"
+    print("function: cross_validation")
     data = json.loads(json_data_s)
     init_data(data)
 
@@ -189,7 +189,7 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
         n = quotient
         if i < remainder:
             n = n+1
-        print "group_count[%02d] = %d" % (i,n)
+        print("group_count[%02d] = %d" % (i,n))
         group_assignment += [generate_group_name(cv_group_head, i)] * n
     random.shuffle(group_assignment)
                 
@@ -256,8 +256,8 @@ def cross_validation(db, json_data_s, feature_type, algorithm, fold_num):
 
 # json_data format: {"selector":${SELECTOR},"option":#{OPTION}}
 def leave_one_out(db, json_data_s, feature_type, algorithm):
-    print "function: leave_one_out"
-    print json_data_s
+    print("function: leave_one_out")
+    print(json_data_s)
     data = json.loads(json_data_s)
     init_data(data)
         
@@ -273,17 +273,17 @@ def leave_one_out(db, json_data_s, feature_type, algorithm):
 
     for s in samples:
         ## train ##
-        print s
+        print(s)
         _data = copy.deepcopy(data)
         _data['selector'] = {'_id':{'$ne':s['_id']}}
         _data['overwrite'] = True
         _data['name'] = leave_one_out_clf_name
         # print _data
-        print "train"
+        print("train")
         result = mod.train(db,feature_type,_data)
         if result['status'] != 'success':
             return result
-        print "predict"
+        print("predict")
         ## predict ##
         result = mod.predict(db,feature_type, Sample(s), _data)
         if result['status'] != 'success':
