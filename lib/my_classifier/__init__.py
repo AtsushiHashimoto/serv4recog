@@ -380,6 +380,7 @@ def train_deco(algorithm):
                 samples = list(samples)
             else:
                 # class_remap毎にサンプルを集める
+                record["ignore(min_sample)"] = ["threshold:%d"%min_sample_count]
                 for gt,pat in class_remap.items():
                     # patを解析する必要???
                     # または/hoge/という文字列であれば十分??要検証
@@ -387,7 +388,8 @@ def train_deco(algorithm):
                     selector['ground_truth'] = re.compile(pat)
                     _samples = mongointerface.get_training_samples(db,feature_type,False,selector)
                     if min_sample_count >= _samples.count():
-                        # 十分なサンプルがない場合はclassから削除して認識対象外とする                        
+                        # 十分なサンプルがない場合はclassから削除して認識対象外とする
+                        record["ignore(min_sample)"].append("%s: %d"%(gt,_samples.count()))
                         continue
                         #return error_json('No samples are hit by regular expression "%s"'%pat)
                     for s in _samples:
