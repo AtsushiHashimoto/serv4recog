@@ -6,6 +6,9 @@ from pymongo import MongoClient
 import os
 import sys
 import json
+import bottle
+
+bottle.BaseRequest.MEMFILE_MAX=100000000000
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)) + '/lib')
 import my_classifier
